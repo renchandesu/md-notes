@@ -48,6 +48,7 @@ git fetch 不会自动合并代码  需要手动merge
 
 ```
 git branch 分支名 创建分支
+"git branch -M" 是 Git 中的一个命令，用于重命名分支。
 git checkout -b feature_x 创建并转到
 git checkout 分支名  切换分支
 git merge 需要合并的分支名 

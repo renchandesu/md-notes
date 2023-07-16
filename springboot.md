@@ -1224,6 +1224,12 @@ preHandle 方法是按注册顺序进行执行的，而 postHandle 和 afterComp
 - 注解实现 适合简单查询
   - @Option 可以设置如自增主键等选项
 
+### 定时任务
+
+首先要在启动类加上注解@EnableScheduling
+
+在需要定时执行的方法上添加@Scheduled(fixedDelay = 3000, initialDelay, cron)注解
+
 ### 整合redis
 
 ```xml
