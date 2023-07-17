@@ -1230,6 +1230,26 @@ preHandle 方法是按注册顺序进行执行的，而 postHandle 和 afterComp
 
 在需要定时执行的方法上添加@Scheduled(fixedDelay = 3000, initialDelay, cron)注解
 
+
+### 国际化
+#### 基础步骤
+1. 在resource文件夹下创建messages.properties（默认配置 必须要有） messages_zh_CN.properties messages_en.properties 三个文件
+2. 在这些文件中，定义好每个code的不同语言下的提示信息
+3. 在需要使用的地方注入 MessageResource对象（springboot已经配置好了）
+4. 使用 `messageResource.getMessage("code",null,LocaleContextHolder.getLocale())`获得对应的提示信息
+
+如果更改了配置文件的路径或者名称，则需要在spring的配置文件中进行额外的设置
+```
+spring.messages.basename=path/prefix
+
+cache-dration
+encoding
+fallback-to-system-locale=true
+```
+后面3个代表message缓存失效的时间，不配置则一直有效 
+
+
+
 ### 整合redis
 
 ```xml
@@ -1294,4 +1314,3 @@ preHandle 方法是按注册顺序进行执行的，而 postHandle 和 afterComp
           max-active: 10
   ```
 
-### 热更新 依赖(待补充)
