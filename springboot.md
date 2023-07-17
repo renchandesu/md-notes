@@ -1246,7 +1246,42 @@ cache-dration
 encoding
 fallback-to-system-locale=true
 ```
-后面3个代表message缓存失效的时间，不配置则一直有效 
+后面3个代表message缓存失效的时间，不配置则一直有效 编码格式 当不存在对应的本地化规则时，是否使用系统默认的规则
+
+#### 一些进阶操作
+
+MessageResource接口在springboot中有三个比较重要的是嫌累
+
+- ResourceBundleMessageSource 这是默认自动装配的
+
+- ReloadableResourceBundleMessageSource 
+
+  - 前者可以读取.properties和.xml结尾的国际化映射文件，后者只可以读取.properties结尾的文件
+  - 前者可以指定映射文件在内存中缓存的时间，后者不可以
+
+  ![image-20230717224521940](/Users/renchan/Desktop/Archive/笔记/assets/image-20230717224521940.png)
+
+- StaticMessageSource 直接将规则保存在内存中
+
+将语言的信息存放在别的地方而不是请求头中 参考代码（未验证）
+
+```
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        LocaleChangeInterceptor interceptor = new LocaleChangeInterceptor();
+        interceptor.setParamName("lang");
+        registry.addInterceptor(interceptor);
+    }
+    @Bean
+    LocaleResolver localeResolver() {
+        SessionLocaleResolver localeResolver = new SessionLocaleResolver();
+        localeResolver.setDefaultLocale(Locale.SIMPLIFIED_CHINESE);
+        return localeResolver;
+    }
+}
+```
 
 
 
