@@ -1146,8 +1146,6 @@ GET /kibana_sample_data_logs/_search
 }
 ```
 
-![img_2.png](img_2.png)
-
 ##### date histogram
 
 ```
@@ -1433,3 +1431,257 @@ POST /sms-logs-index/_search
 ```
 
 ### 整合Springboot
+
+#### ElasticsearchTemplate 增删改查
+
+```java
+import com.alibaba.fastjson.JSON;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.TermQueryBuilder;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
+import org.springframework.data.elasticsearch.core.SearchHit;
+import org.springframework.data.elasticsearch.core.SearchHits;
+import org.springframework.data.elasticsearch.core.document.Document;
+import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
+import org.springframework.data.elasticsearch.core.query.AliasQuery;
+import org.springframework.data.elasticsearch.core.query.IndexQuery;
+import org.springframework.data.elasticsearch.core.query.NativeSearchQuery;
+import org.springframework.data.elasticsearch.core.query.UpdateQuery;
+import org.springframework.stereotype.Component;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
+
+@Slf4j
+@Component
+public class CommonESRepository {
+
+
+    /**
+     * 索引的setting
+    */
+    @Value("classpath:json/es-setting.json")
+    private Resource esSetting;
+
+    private final ElasticsearchRestTemplate elasticsearchRestTemplate;
+
+    public CommonESRepository(ElasticsearchRestTemplate elasticsearchRestTemplate) {
+        this.elasticsearchRestTemplate = elasticsearchRestTemplate;
+    }
+
+    /**
+     * 判断索引是否存在
+     * @param indexName 索引名称
+     * @return boolean
+     */
+    public boolean indexExist(String indexName){
+        if(StringUtils.isBlank(indexName)){
+            return false;
+        }
+        IndexCoordinates indexCoordinates = IndexCoordinates.of(indexName);
+        return elasticsearchRestTemplate.indexOps(indexCoordinates).exists();
+    }
+
+    /**
+     * 判断index是否存在 不存在创建index
+     * @param index 索引实体
+     * @param indexName 创建索引的名称
+     */
+    public void indexCreate(Class index,String indexName){
+        if(null == index || StringUtils.isBlank(indexName)){
+            return;
+        }
+        IndexCoordinates indexCoordinates = IndexCoordinates.of(indexName);
+        if(!elasticsearchRestTemplate.indexOps(indexCoordinates).exists()){
+            // 根据索引实体，获取mapping字段
+            Document mapping = elasticsearchRestTemplate.indexOps(indexCoordinates).createMapping(index);
+            // 创建索引
+            String esSettingStr = null;
+            try {
+                // 读取setting配置文件
+                esSettingStr = IOUtils.toString(esSetting.getInputStream(), Charset.forName("utf-8"));
+            } catch (IOException e) {
+                log.error("读取setting配置文件错误", e);
+            }
+            // setting
+            Document setting = Document.parse(esSettingStr);
+            elasticsearchRestTemplate.indexOps(indexCoordinates).create(setting);
+            // 创建索引mapping
+            elasticsearchRestTemplate.indexOps(indexCoordinates).putMapping(mapping);
+        }
+    }
+
+    /**
+     * 根据索引名称，删除索引
+     * @param index 索引类
+     */
+    public void indexDelete(String index){
+        elasticsearchRestTemplate.indexOps(IndexCoordinates.of(index)).delete();
+    }
+
+
+    /**
+     * 索引添加别名
+     * @param indexName 索引名
+     * @param aliasName 别名
+     */
+    public boolean indexAddAlias(String indexName,String aliasName){
+        if(StringUtils.isBlank(indexName) || StringUtils.isBlank(aliasName)){
+            return false;
+        }
+        // 索引封装类
+        IndexCoordinates indexCoordinates = IndexCoordinates.of(indexName);
+        // 判断索引是否存在
+        if(elasticsearchRestTemplate.indexOps(indexCoordinates).exists()){
+            // 索引别名
+            AliasQuery query = new AliasQuery(aliasName);
+            // 添加索引别名
+            boolean bool = elasticsearchRestTemplate.indexOps(indexCoordinates).addAlias(query);
+            return bool;
+        }
+        return false;
+    }
+
+    /**
+     * 索引别名删除
+     * @param indexName 索引名
+     * @param aliasName 别名
+     */
+    public boolean indexRemoveAlias(String indexName,String aliasName){
+        if(StringUtils.isBlank(indexName) || StringUtils.isBlank(aliasName)){
+            return false;
+        }
+        // 索引封装类
+        IndexCoordinates indexCoordinates = IndexCoordinates.of(indexName);
+        // 判断索引是否存在
+        if(elasticsearchRestTemplate.indexOps(indexCoordinates).exists()){
+            // 索引别名
+            AliasQuery query = new AliasQuery(aliasName);
+            // 删除索引别名
+            boolean bool = elasticsearchRestTemplate.indexOps(indexCoordinates).removeAlias(query);
+            return bool;
+        }
+        return false;
+    }
+
+    /**
+     * 索引新增数据
+     * @param t 索引类
+     * @param <T> 索引类
+     */
+    public <T> void save(T t){
+        // 根据索引实体名新增数据
+        elasticsearchRestTemplate.save(t);
+    }
+
+    /**
+     * 批量插入数据
+     * @param queries 数据
+     * @param index 索引名称
+     */
+    public void bulkIndex(List<IndexQuery> queries, String index){
+        // 索引封装类
+        IndexCoordinates indexCoordinates = IndexCoordinates.of(index);
+        // 批量新增数据，此处数据，不要超过100m，100m是es批量新增的筏值，修改可能会影响性能
+        elasticsearchRestTemplate.bulkIndex(queries,indexCoordinates);
+    }
+
+    /**
+     * 根据条件删除对应索引名称的数据
+     * @param c 索引类对象
+     * @param filedName 索引中字段
+     * @param val 删除条件
+     * @param index 索引名
+     */
+    public void delete(Class c,String filedName,Object val,String index){
+        // 匹配文件查询
+        TermQueryBuilder termQueryBuilder = QueryBuilders.termQuery(filedName, val);
+        NativeSearchQuery nativeSearchQuery = new NativeSearchQuery(termQueryBuilder);
+        // 删除索引数据
+        elasticsearchRestTemplate.delete(nativeSearchQuery,c, IndexCoordinates.of(index));
+    }
+
+    /**
+     * 根据数据id删除索引
+     * @param id 索引id
+     * @param index
+     */
+    public void deleteById(Object id,String index){
+        if(null != id && StringUtils.isNotBlank(index)){
+            // 根据索引删除索引id数据
+            elasticsearchRestTemplate.delete(id.toString(),IndexCoordinates.of(index));
+        }
+    }
+
+    /**
+     * 根据id更新索引数据,不存在则创建索引
+     * @param t 索引实体
+     * @param id 主键
+     * @param index 索引名称
+     * @param <T> 索引实体
+     */
+    public <T> void update(T t,Integer id,String index){
+        // 查询索引中数据是否存在
+        Object data = elasticsearchRestTemplate.get(id.toString(), t.getClass(), IndexCoordinates.of(index));
+        if(data != null){
+            // 存在则更新
+            UpdateQuery build = UpdateQuery.builder(id.toString()).withDocument(Document.parse(JSON.toJSONString(t))).build();
+            elasticsearchRestTemplate.update(build,IndexCoordinates.of(index));
+        }else {
+            // 不存在则创建
+            elasticsearchRestTemplate.save(t);
+        }
+    }
+
+    /**
+     * 查询数据根据实际情况自行修改
+     * @param c
+     * @param search
+     * @param index
+     * @param <T>
+     * @return
+     */
+    public <T> List<T> getList(Class<T> c,String search,String index){
+        TermQueryBuilder termQueryBuilder = QueryBuilders.termQuery("title", search);
+        NativeSearchQuery nativeSearchQuery = new NativeSearchQuery(termQueryBuilder);
+        nativeSearchQuery.addSort(Sort.by(Sort.Direction.DESC,"_score"));
+        nativeSearchQuery.setTrackTotalHits(true);
+        SearchHits<T> tax_knowledge_matter = elasticsearchRestTemplate.search(nativeSearchQuery, c, IndexCoordinates.of(index));
+        List<SearchHit<T>> searchHits = tax_knowledge_matter.getSearchHits();
+        List<T> returnResult = new ArrayList<>();
+        searchHits.forEach(item -> {
+            T content = item.getContent();
+            returnResult.add(content);
+        });
+        return returnResult;
+    }
+
+    public <T> List<T> getList(Class<T> c,String search,int page,int size,Integer siteId,String index){
+        BoolQueryBuilder title = QueryBuilders.boolQuery().
+                must(QueryBuilders.matchQuery("title", search)).
+                must(QueryBuilders.termQuery("siteId", siteId));
+        NativeSearchQuery nativeSearchQuery = new NativeSearchQuery(title);
+//        nativeSearchQuery.addSort(Sort.by(Sort.Direction.DESC,"_score"));
+        nativeSearchQuery.setPageable(PageRequest.of(page,size,Sort.by(Sort.Direction.DESC,"_score")));
+        nativeSearchQuery.setTrackTotalHits(true);
+        SearchHits<T> tax_knowledge_matter = elasticsearchRestTemplate.search(nativeSearchQuery, c, IndexCoordinates.of(index));
+        List<SearchHit<T>> searchHits = tax_knowledge_matter.getSearchHits();
+        List<T> returnResult = new ArrayList<>();
+        searchHits.forEach(item -> {
+            T content = item.getContent();
+            returnResult.add(content);
+        });
+        return returnResult;
+    }
+}
+
+```
