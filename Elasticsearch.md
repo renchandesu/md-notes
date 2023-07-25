@@ -758,6 +758,31 @@ GET /kibana_sample_data_logs/_search 这个查询的意思是对不同referer,�
 }
 ```
 
+##### cardinality聚合
+
+去重，cartinality metric，对每个bucket中的指定的field进行去重，取去重后的count，类似于count(distcint)  **cardinality，count(distinct)，5%的错误率，性能在100ms左右**
+
+```
+{
+  "size" : 0,
+  "aggs" : {
+      "months" : {
+        "date_histogram": {
+          "field": "sold_date",
+          "interval": "month"
+        },
+        "aggs": {
+          "distinct_colors" : {
+              "cardinality" : {
+                "field" : "brand"
+              }
+          }
+        }
+      }
+  }
+}
+```
+
 ##### 管道聚合 pipeline
 
 管道聚合用于对聚合的结果进行二次聚合
@@ -1683,5 +1708,4 @@ public class CommonESRepository {
         return returnResult;
     }
 }
-
 ```
