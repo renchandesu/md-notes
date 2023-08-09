@@ -47,29 +47,37 @@ es在首次启动时，会生成es的用户名密码，可以在之后进行修�
 `./elasticsearch-reset-password --url http://localhost:9200 --username elastic -i`
 
 ### ES的近实时性
+
 当一个文档被写入lucene后是不能立即被查询到的，es使用refresh执行刷新操作，调用lucence的reopen命令为内存中新写入的数据生成一个新的segment，此时被处理的数据才可以被检索到。
 refresh操作的时间`refresh_interval` 默认1s 也可以调用显式refresh API或者在写入时带上refresh
+
 ```
 PUT /test/_doc/2?refresh=true
 ```
+
 ### ES数据可靠性
+
 ##### 引入translog
+
 当—个文档写入Lucence后是存储在内存中的，即使执行了refresh操作仍然是在文件系统缓存中，如果此时服务器宕机，那么这部分数据将会丢失。
 为此Es增加了translog，当进行文档写操作时会先将文档写入Lucene，然后写入一份到translog，写入translog是落盘的
 (如果对可靠性要求不是很高，也可以设置异步落盘，可以提高性能，由配置findex.translog.durability和index.translog.sync_interval)控制)，这样就可以防止服务器宕机后数据的丢失。由于translog是追加写入，因此性能比较好。与传统的分布式系统不同，这里是先写入Lucene再写入translog，原因是写入Lucene可能会失败，为了减少写入失败回滚的复杂度，因此先写入Lucene.
+
 ##### flush操作
+
 另外每30分钟或当translog达到一定大小(由index.translog.flush_threshold_size 控制，默认51mb),
 E5会触发一次flush操作，此时ES会先执行refresh操作将buffer中的数据生成segment，
 然后调用lucene的commit方法将所有内存中的segment fsync到磁盘。
 此时lucene中的数据就完成了持久化，会清空translog中的数据(6.x版本为了实现sequenceIlDs,不册除translog)
+
 ##### merge操作
+
 由于refresh的间隔时间是1s，因此时间长了会产生大量的小segment，为此es运行一个任务检测当前磁盘中的segment，对符合条件的sement进行合并操作
 这样可以减少segment的数量，提高查询速度，降低符合。
 **而且，merge过程也是文档被执行更新或删除后，旧文档真正被删除的时机**
 我们也可以手动去触发merge
+
 ##### 多副本机制
-
-
 
 ### 主要概念
 
@@ -137,8 +145,10 @@ ES 默认就是集群状态，整个集群是一份完整、互备的数据。
 - 表示创建数据的动作：即创建一个doc到某个索引
 
 #### 映射 Mapping
+
 Mapping用于描述字段，包含了一些属性，比如字段名称、类型、字段使用的分词器、是否评分、是否创建索引等属性，并且在 ES 中一个字段可以有多个类型。
 比如说使用fields属性，让一个字段有多种不同的类型。
+
 ```
       "id":{ 
         "type": "long",
@@ -154,7 +164,9 @@ Mapping用于描述字段，包含了一些属性，比如字段名称、类型�
 即使不进行手动映射，es也会对写入的文档进行自动类型推断，但是在生产环境，避免使用
 
 主要有以下数据类型，并分为可以被分词的数据类型（text等）和不可以被分词的数据类型
+
 ##### 基本数据类型
+
 - Numbers：数字类型，包含很多具体的基本数据类型
 - binary：编码为 Base64 字符串的二进制值。
 - boolean：即布尔类型，接受 true 和 false。
@@ -173,12 +185,13 @@ Elasticsearch 内部会把日期转换为 UTC（世界标准时间），并将�
       }      
 ```
 
-
 ##### 对象关系类型（复杂类型）
+
 - object：非基本数据类型之外，默认的 json 对象为 object 类型。
 - nested ★：嵌套类型。 避免使用object类型时出现扁平化现象，而影响检索的正确性
 
 ##### 结构化类型
+
 - Range：范围类型，比如 long_range，double_range，data_range 等
 - ip：ipv4 或 ipv6 地址
 - version：版本号
@@ -200,26 +213,32 @@ PUT my_index/my_type/1
   }
 }
 ```
+
 ##### 聚合数据类型
+
 - aggregate_metric_double：
 - histogram：
 
 4.2.5 文本搜索字段
 text ★：文本数据类型，用于全文检索。text 类型的字段不用于排序，且很少用于聚合
 
-
 在创建时，通过指定index选项来指定该字段是否可被索引 | "analyzer": "standard"指定分词器
 
 ##### 空间数据类型 ★
+
 geo_point：纬度和经度点。
 geo_shape：复杂的形状，例如多边形。
 point：任意笛卡尔点。
 shape：任意笛卡尔几何。
 
 ![img_1.png](img_1.png)
+
 ##### 其他类型
+
 percolator：用Query DSL 编写的索引查询。
+
 ##### 文档排名类型
+
 dense_vector：记录浮点值的密集向量。
 rank_feature：记录数字特征以提高查询时的命中率。
 rank_features：记录数字特征以提高查询时的命中率。
@@ -256,6 +275,7 @@ rank_features：记录数字特征以提高查询时的命中率。
 由三种组件构成： 字符过滤器(预处理)，分词器、Token过滤器(将切分的单词进行加工)
 
 ##### 文档归一化
+
 也就是对分词后的词项进行一定的处理，比如同义词、停用词、大小写统一等，从而**提高召回率和查询效率**
 
 ##### 分词器
@@ -267,7 +287,6 @@ rank_features：记录数字特征以提高查询时的命中率。
 ##### 自定义分词器
 
 ### 索引的创建与修改
-
 
 ```
 PUT <index_name>/_mapping 
@@ -285,19 +304,20 @@ PUT <index_name>/_mapping
             "<parameter_name>": "<parameter_value>"
           },
 }
-
-
 ```
-
 
 ### 文档的CRUD
+
 #### 文档的新增
+
 - 写入单条数据
-```
-PUT <index>/_doc/<id>[?op_type=create] 如果已存在会失败 如果type是index则存在时全量更新
-{
+  
+  ```
+  PUT <index>/_doc/<id>[?op_type=create] 如果已存在会失败 如果type是index则存在时全量更新
+  {
    data
-}
+  }
+  ```
 
 POST kibana_sample_data_logs/_doc 不自己指定id的情况的写入，es会自动生成一个id
 {
@@ -305,13 +325,14 @@ POST kibana_sample_data_logs/_doc 不自己指定id的情况的写入，es会自
 }
 
 ```
-
 #### 文档的更新
 ```
+
 POST /<index>/_update/<_id> 局部更新
 {
     data
 }
+
 ```
 ###### 文档的部分更新
 lucene支持对文档的整体更新, ES为了支持局部更新，在Lucene的Store索引中存储了一个_source字段，
@@ -324,50 +345,56 @@ lucene支持对文档的整体更新, ES为了支持局部更新，在Lucene的S
 
 #### 文档的删除
 ```
+
 DELETE /<index>/_doc/<_id>
+
 ```
 #### 批量的增删改 _bulk
 ##### 批量写入
 ```
+
 POST /kibana_sample_data_logs/_docs/_bulk 下面的json体要成对出现
 {"index":{}} 这里可以指定id "_id"不指定默认
 {data body}
 {"index":{}}
 {data body}
 ...
+
 ```
 ##### 批量更新
 ```
+
 POST /kibana_sample_data_logs/_doc/_bulk
 {"update":{"_id":"1111111222222"}}
 {"doc":{"ip":"192.168.2.4"}}
 ...
+
 ```
 ##### 批量删除
 ```
+
 POST /<index>/_doc/_bulk
 {"delete":{"_id":"1111111222222"}}
+
 ```
-
-
 #### Query DSL
 
 ##### 查询索引下文档总数
-
 ```
+
 GET /_cat/count/<index1,index2>?v
 GET /articles/_count doc数量
-```
 
+```
 ##### 空搜索
-
 ```
+
 GET /_search 返回集群中所有索引的所有文档
 GET /<index>/_search
 GET /syslog*/_search 支持通配符
 GET /_all/type1/_search 返回所有索引中指定类型的文档
-```
 
+```
 *返回结果的解释*
 
 ![image-20230713200315305](/Users/renchan/Library/Application Support/typora-user-images/image-20230713200315305.png)
@@ -375,11 +402,11 @@ GET /_all/type1/_search 返回所有索引中指定类型的文档
 ![image-20230713200533497](/Users/renchan/Library/Application Support/typora-user-images/image-20230713200533497.png)
 
 ##### 分页查询 
-
 ```
+
 GET /<index>/_search?size=20&from=10 参数为size、from
-```
 
+```
 **应该避免分页太深或者一次返回数据太多** 在分布式系统中，排序成本随着分页的深度的增加而成倍增加
 
 ##### DSL
@@ -391,25 +418,23 @@ GET /<index>/_search?size=20&from=10 参数为size、from
 查询全部，如果带参数，当参数被匹配可以增加score.
 
 与之相反的match_none不匹配任何文档
-
 ```
+
 GET /index/_search
 {
   "query": {
     "match_all": { "boost" : 1.2 } //这里可以是一个空{}
   }
 }
+
 ```
-
-
-
 ###### match
 
 对准确值字段使用match必须精确匹配
 
 否则会使用正确的分析器去分析字符串
-
 ```
+
 GET /kibana_sample_data_logs/_search
 {
   "query":{
@@ -418,8 +443,8 @@ GET /kibana_sample_data_logs/_search
     }
   }
 }
-```
 
+```
 ###### match_phrase
 
 将查询字符串解析成一个词项列表，只保留包含了所有词项的文档
@@ -427,8 +452,8 @@ GET /kibana_sample_data_logs/_search
 ###### Multi_match
 
 在多个字段上执行相同的query
-
 ```
+
 GET /<index>/_search
 {
   "query": {
@@ -438,8 +463,8 @@ GET /<index>/_search
   }
   }
 }
-```
 
+```
 ###### range
 
 范围查询
@@ -447,8 +472,8 @@ GET /<index>/_search
 可以对日期、数字等类型使用
 
 > Range queries on [`text`](https://www.elastic.co/guide/en/elasticsearch/reference/current/text.html) or [`keyword`](https://www.elastic.co/guide/en/elasticsearch/reference/current/keyword.html) fields will not be executed if [`search.allow_expensive_queries`](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html#query-dsl-allow-expensive-queries) is set to false.
-
 ```
+
 GET /kibana_sample_data_logs/_search
 {
   "query": {
@@ -458,12 +483,13 @@ GET /kibana_sample_data_logs/_search
           "lte": 2000,
           "format": "yyyy-mm-dd"将时间转换为这种格式比较
         }
-        
+
       }
+
   }
 }
-```
 
+```
 ###### term
 
 词条查询
@@ -475,8 +501,8 @@ GET /kibana_sample_data_logs/_search
 ###### terms
 
 多个匹配条件，满足一个即返回
-
 ```
+
 GET /index/_search
 {
   "query": {
@@ -485,8 +511,8 @@ GET /index/_search
       }
   }
 }
-```
 
+```
 ###### ids
 
 根据id列表查询
@@ -507,7 +533,7 @@ GET /_search
 指定的字段必须具有可被索引的值,最常见的情况是字段为null
 
 > 在一些情况下字段的值是不可被索引的
->
+> 
 > - The field in the source JSON is `null` or `[]`
 > - The field has `"index" : false` set in the mapping
 > - The length of the field value exceeded an `ignore_above` setting in the mapping
@@ -530,13 +556,13 @@ GET /_search
 
 ```
 {"query":{
-	"bool":{
-		"must":[], 必须匹配的条件，计算相关度得分 ;内部的子查询是上面的一种
-		"must_not":[], 必须不符合的条件，不计算相关度得分
-		"should":[], 如果符合提高得分,不是必须要满足，但是如果没有must语句则要求至少一个条件满足，也可以通过minimum_should_match控制
-		"minimum_should_match":2
-		"filter":[] 使用 filter 查询的评分将被忽略，并且结果会被缓存
-	}
+    "bool":{
+        "must":[], 必须匹配的条件，计算相关度得分 ;内部的子查询是上面的一种
+        "must_not":[], 必须不符合的条件，不计算相关度得分
+        "should":[], 如果符合提高得分,不是必须要满足，但是如果没有must语句则要求至少一个条件满足，也可以通过minimum_should_match控制
+        "minimum_should_match":2
+        "filter":[] 使用 filter 查询的评分将被忽略，并且结果会被缓存
+    }
 }}
 ```
 
@@ -546,11 +572,11 @@ GET /_search
 
 ```
 {
-	"constant_score":{
-		"filter":{
-			//bool语句 或者其他条件语句
-		}
-	}
+    "constant_score":{
+        "filter":{
+            //bool语句 或者其他条件语句
+        }
+    }
 }
 ```
 
@@ -560,17 +586,17 @@ GET /_search
 
 ```
 {
-	"query":{
-		"match":{
-			"title":{
-				"query":"abc def",
-				"operator":"and" //默认是or
-				"minimum_should_match":4/"25%",
-				"boost":1.2 //提升权重
-			}
+    "query":{
+        "match":{
+            "title":{
+                "query":"abc def",
+                "operator":"and" //默认是or
+                "minimum_should_match":4/"25%",
+                "boost":1.2 //提升权重
+            }
 
-		}
-	}
+        }
+    }
 }
 ```
 
@@ -578,12 +604,12 @@ GET /_search
 
 ```
 {
-	"query":{
-		"multi_match":{
+    "query":{
+        "multi_match":{
       "query":"abc def",
       "fields":["a1","a2^2"]
-		}
-	}
+        }
+    }
 }
 ```
 
@@ -618,21 +644,21 @@ GET goods_en/_search
 }
 ```
 
-
-
 #### 聚合查询
+
 在 Elasticsearch 中，聚合查询是一种分析和统计数据的功能。
 聚合查询能够处理大量的数据，执行各种统计分析，如计算总数、平均值、最大值、最小值、标准差等等，并生成相应的报告。
 
 text类型的数据不支持聚合
 
-
 聚合查询包含以下部分：
+
 - 查询条件：指定需要聚合的文档，可以使用标准的 Elasticsearch 查询语法，如 term、match、range 等等。
 - 聚合函数：指定要执行的聚合操作，如 sum、avg、min、max、terms、date_histogram 等等。每个聚合命令都会生成一个聚合结果。
 - 聚合嵌套：聚合命令可以嵌套，以便更细粒度地分析数据。
 
 聚合函数的组成如下:
+
 ```
 GET <index_name>/_search
 {
@@ -647,7 +673,9 @@ GET <index_name>/_search
 ```
 
 ##### 桶查询
+
 统计不同类型数据的数量
+
 ```
 GET /kibana_sample_data_logs/_search
 {
@@ -660,6 +688,7 @@ GET /kibana_sample_data_logs/_search
   }
 }
 ```
+
 ```
 范围统计
 GET /kibana_sample_data_logs/_search
@@ -676,8 +705,11 @@ GET /kibana_sample_data_logs/_search
   }
 }
 ```
+
 ##### 指标聚合
+
 统计最大值、最小值、平均值等
+
 ```
 GET /kibana_sample_data_logs/_search
 {
@@ -702,7 +734,9 @@ GET /kibana_sample_data_logs/_search
 ```
 
 ##### 嵌套聚合
+
 用于在某种聚合的计算结果之上再次聚合
+
 ```
 GET /kibana_sample_data_logs/_search 这个查询的意思是对不同referer,都统计各个agent的个数,第二个聚合依赖于第一个
 {
@@ -724,7 +758,33 @@ GET /kibana_sample_data_logs/_search 这个查询的意思是对不同referer,�
 }
 ```
 
+##### cardinality聚合
+
+去重，cartinality metric，对每个bucket中的指定的field进行去重，取去重后的count，类似于count(distcint)  **cardinality，count(distinct)，5%的错误率，性能在100ms左右**
+
+```
+{
+  "size" : 0,
+  "aggs" : {
+      "months" : {
+        "date_histogram": {
+          "field": "sold_date",
+          "interval": "month"
+        },
+        "aggs": {
+          "distinct_colors" : {
+              "cardinality" : {
+                "field" : "brand"
+              }
+          }
+        }
+      }
+  }
+}
+```
+
 ##### 管道聚合 pipeline
+
 管道聚合用于对聚合的结果进行二次聚合
 
 管道聚合主要用来处理来自其他聚合的产出结果，而不是来自文档集的产出，并将信息添加到最终的输出结果中。
@@ -740,7 +800,7 @@ GET /kibana_sample_data_logs/_search 这个查询的意思是对不同referer,�
 > 聚合名称：<name of the aggregation>，直接指定聚合的名称
 > 权值：<name of the metric>，直接指定权值
 > 完整路径：agg_name[> agg_name]*[. metrics]，综合利用上面的方式指定完整路径
->
+> 
 > 特殊值：“_count”，输入的文档个数
 
 ###### Avg Bucket Aggregation
@@ -879,15 +939,10 @@ GET /kibana_sample_data_logs/_search
 }
 ```
 
-
-
-
-
-
-
-
 ##### 分页和排序
+
 ###### 对聚合的结果进行排序
+
 ```
 GET <index_name>/_search
 {
@@ -907,6 +962,7 @@ GET <index_name>/_search
 ```
 
 还可以进行多字段排序 先..再..
+
 ```
 GET goods/_search?size=0
 {
@@ -927,7 +983,9 @@ GET goods/_search?size=0
   }
 }
 ```
+
 还可以按照内部聚合的结果，对上层聚合进行排序
+
 ```
 GET goods/_search
 {
@@ -951,8 +1009,10 @@ GET goods/_search
   }
 }
 ```
+
 ##### 过滤器
-Filter 用于局部聚合查询条件过滤，可在指定聚合函数内嵌套使用
+
+Filter 用于局部聚合查询条件过滤，可在指定聚合函数内嵌套使用，嵌套使用后会在聚合结果中包含符合filter条件的文档
 
 ```
 POST <index_name>/_search
@@ -975,7 +1035,9 @@ POST <index_name>/_search
   }
 }
 ```
+
 post_filter 只过滤搜索结果，而对聚合结果没有影响
+
 ```
 GET goods/_search
 {
@@ -994,9 +1056,30 @@ GET goods/_search
 }
 ```
 
+#### Filters过滤
+
+Filters Aggregation 是多过滤器聚合，可以把符合多个过滤条件的文档分到不同的桶中，即每个分组关联一个过滤条件，并收集所有满足自身过滤条件的文档。
+
+```
+{
+  "size": 0,
+  "aggs": {
+    "messages": {
+      "filters": {
+        "filters": {
+          "errors": { "match": { "body": "error" } },
+          "warnings": { "match": { "body": "warning" } }
+        }
+      }
+    }
+  }
+}
+```
 
 ##### 全局聚合过滤
+
 query可以和aggs一起使用，aggs使用的文档是query的结果
+
 ```
 POST goods/_search?filter_path=aggregations
 {
@@ -1015,6 +1098,7 @@ POST goods/_search?filter_path=aggregations
   }
 }
 ```
+
 ```
 GET goods/_search
 {
@@ -1026,7 +1110,7 @@ GET goods/_search
     "avg_price": {
       ...
     },
-    "all_avg_price": {
+    "avg_price": {
       "global": {}, 加上这个，表明这个聚合使用的是全部的文档
       "aggs": {
         ...
@@ -1035,6 +1119,7 @@ GET goods/_search
   }
 }
 ```
+
 ##### 对聚合结果的查询 top hits
 
 ```
@@ -1065,7 +1150,9 @@ GET /kibana_sample_data_logs/_search
 ```
 
 ##### histogram
+
 用于区间统计
+
 ```
 GET /kibana_sample_data_logs/_search
 {
@@ -1073,19 +1160,19 @@ GET /kibana_sample_data_logs/_search
   "aggs": {
     "h_n": {
       "histogram": {
-        "field": "bytes", 			
-        "interval": 100,		#区间间隔	
-        "keyed": true,			#返回数据的结构化类型	
-        "min_doc_count": 10,	#返回桶的最小文档数阈值，即文档数小于num的桶不会被输出
-        "missing": 10				#空值的替换值，即如果文档对应字段的值为空输出
+        "field": "bytes",             
+        "interval": 100,        #区间间隔    
+        "keyed": true,            #返回数据的结构化类型    
+        "min_doc_count": 10,    #返回桶的最小文档数阈值，即文档数小于num的桶不会被输出
+        "missing": 10                #空值的替换值，即如果文档对应字段的值为空输出
       }
     }
   }
 }
 ```
-![img_2.png](img_2.png)
 
 ##### date histogram
+
 ```
 GET /kibana_sample_data_logs/_search
 {
@@ -1093,7 +1180,7 @@ GET /kibana_sample_data_logs/_search
   "aggs": {
     "h_n": {
       "date_histogram": {
-        "field": "timestamp", 			
+        "field": "timestamp",             
         "interval": "1D", 日期的间隔 D M 
         "format": "yyyy-MM-dd"
       }
@@ -1101,6 +1188,7 @@ GET /kibana_sample_data_logs/_search
   }
 }
 ```
+
 - interval：时间间隔的参数可选项
   - fixed_interval：ms（毫秒）、s（秒）、 m（分钟）、h（小时）、d（天），注意单位需要带上具体的数值，如2d为两天。需要当心当单位过小，会导致输出桶过多而导致服务崩溃。
   - calendar_interval： year quarter month week day hour minute
@@ -1108,9 +1196,11 @@ GET /kibana_sample_data_logs/_search
 - keyed：指定是否将结果按时间段的键值对形式返回。如果设置为true，每个时间段的结果将以键值对的形式返回，默认为false。
 
 ##### percentile
+
 用于评估当前数值分布情况，比如 99 percentile 是 1000 ， 是指 99%的数值都在 1000 以内。
 
 常见的一个场景就是我们制定 SLA 的时候常说 99% 的请求延迟都在100ms 以内，这个时候你就可以用 99 percentile 来查一下
+
 ```
 GET <index_name>/_search?size=0
 {
@@ -1119,23 +1209,22 @@ GET <index_name>/_search?size=0
       "percentiles": {
         "field": "price",
         "percents": [
-  				percent1，				#区间的数值，如5、10、30、50、99 即代表5%、10%、30%、50%、99%的数值分布
-  				percent2，
-  				...
+                  percent1，                #区间的数值，如5、10、30、50、99 即代表5%、10%、30%、50%、99%的数值分布
+                  percent2，
+                  ...
         ]
       }
     }
   }
 }
 ```
+
 ![img_3.png](img_3.png)
 
 ##### 邻接矩阵
+
 Elasticsearch中的Adjacency Matrix聚合是一种强大的聚合类型，它可以用于分析和发现数据中的关系和连接。
 Adjacency Matrix聚合在许多使用场景中都非常有用。
-
-
-
 
 #### DSL（一些查询的草稿）
 
@@ -1176,8 +1265,8 @@ GET /_cat/indices
 GET /index_name/_mapping 查看索引的映射信息
 POST /_reindex 重建索引内的文档，如果索引内没有文档无法创建成功，并且不拷贝索引的结构
 {
-	"dest":{"index":""},
-	"source":{"index":""}
+    "dest":{"index":""},
+    "source":{"index":""}
 }
 POST /articles/article/3 写入文档
 {
@@ -1186,7 +1275,7 @@ POST /articles/article/3 写入文档
   "author":"renchan",
   "content":"ok sfj",
   "created_date":"2022-11-12"
-  
+
 }
 
 # 更新文档
@@ -1295,7 +1384,7 @@ GET /articles/article/_search
     "bool": {
       "must": [
         {
-          
+
         }
       ],"should": [
         {}
@@ -1315,7 +1404,7 @@ GET /articles/article/_search
       "query": "",
       "fields": []
     }
-    
+
   }
 }
 
@@ -1331,7 +1420,7 @@ GET /articles/article/_search
   "bool": {
     "must": [
       {"term": {
-        "author": {
+        "author": 
           "value": "renchan"
         }
       }}
@@ -1343,8 +1432,280 @@ GET /articles/article/_search
   }
 }
 }
+```
 
+#### 高亮显示
+
+```html
+POST /sms-logs-index/_search
+{
+  "query": {
+    "match": {
+      "smsContent": "魅力"
+    }
+  },
+  "highlight": {
+    "fields": {
+      "smsContent": {}
+    },
+    "pre_tags": "<font color='red'>",
+    "post_tags": "</font>",
+    "fragment_size": 10
+  }
+}
 ```
 
 ### 整合Springboot
 
+#### ElasticsearchTemplate 增删改查
+
+```java
+import com.alibaba.fastjson.JSON;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.TermQueryBuilder;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
+import org.springframework.data.elasticsearch.core.SearchHit;
+import org.springframework.data.elasticsearch.core.SearchHits;
+import org.springframework.data.elasticsearch.core.document.Document;
+import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
+import org.springframework.data.elasticsearch.core.query.AliasQuery;
+import org.springframework.data.elasticsearch.core.query.IndexQuery;
+import org.springframework.data.elasticsearch.core.query.NativeSearchQuery;
+import org.springframework.data.elasticsearch.core.query.UpdateQuery;
+import org.springframework.stereotype.Component;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
+
+@Slf4j
+@Component
+public class CommonESRepository {
+
+
+    /**
+     * 索引的setting
+    */
+    @Value("classpath:json/es-setting.json")
+    private Resource esSetting;
+
+    private final ElasticsearchRestTemplate elasticsearchRestTemplate;
+
+    public CommonESRepository(ElasticsearchRestTemplate elasticsearchRestTemplate) {
+        this.elasticsearchRestTemplate = elasticsearchRestTemplate;
+    }
+
+    /**
+     * 判断索引是否存在
+     * @param indexName 索引名称
+     * @return boolean
+     */
+    public boolean indexExist(String indexName){
+        if(StringUtils.isBlank(indexName)){
+            return false;
+        }
+        IndexCoordinates indexCoordinates = IndexCoordinates.of(indexName);
+        return elasticsearchRestTemplate.indexOps(indexCoordinates).exists();
+    }
+
+    /**
+     * 判断index是否存在 不存在创建index
+     * @param index 索引实体
+     * @param indexName 创建索引的名称
+     */
+    public void indexCreate(Class index,String indexName){
+        if(null == index || StringUtils.isBlank(indexName)){
+            return;
+        }
+        IndexCoordinates indexCoordinates = IndexCoordinates.of(indexName);
+        if(!elasticsearchRestTemplate.indexOps(indexCoordinates).exists()){
+            // 根据索引实体，获取mapping字段
+            Document mapping = elasticsearchRestTemplate.indexOps(indexCoordinates).createMapping(index);
+            // 创建索引
+            String esSettingStr = null;
+            try {
+                // 读取setting配置文件
+                esSettingStr = IOUtils.toString(esSetting.getInputStream(), Charset.forName("utf-8"));
+            } catch (IOException e) {
+                log.error("读取setting配置文件错误", e);
+            }
+            // setting
+            Document setting = Document.parse(esSettingStr);
+            elasticsearchRestTemplate.indexOps(indexCoordinates).create(setting);
+            // 创建索引mapping
+            elasticsearchRestTemplate.indexOps(indexCoordinates).putMapping(mapping);
+        }
+    }
+
+    /**
+     * 根据索引名称，删除索引
+     * @param index 索引类
+     */
+    public void indexDelete(String index){
+        elasticsearchRestTemplate.indexOps(IndexCoordinates.of(index)).delete();
+    }
+
+
+    /**
+     * 索引添加别名
+     * @param indexName 索引名
+     * @param aliasName 别名
+     */
+    public boolean indexAddAlias(String indexName,String aliasName){
+        if(StringUtils.isBlank(indexName) || StringUtils.isBlank(aliasName)){
+            return false;
+        }
+        // 索引封装类
+        IndexCoordinates indexCoordinates = IndexCoordinates.of(indexName);
+        // 判断索引是否存在
+        if(elasticsearchRestTemplate.indexOps(indexCoordinates).exists()){
+            // 索引别名
+            AliasQuery query = new AliasQuery(aliasName);
+            // 添加索引别名
+            boolean bool = elasticsearchRestTemplate.indexOps(indexCoordinates).addAlias(query);
+            return bool;
+        }
+        return false;
+    }
+
+    /**
+     * 索引别名删除
+     * @param indexName 索引名
+     * @param aliasName 别名
+     */
+    public boolean indexRemoveAlias(String indexName,String aliasName){
+        if(StringUtils.isBlank(indexName) || StringUtils.isBlank(aliasName)){
+            return false;
+        }
+        // 索引封装类
+        IndexCoordinates indexCoordinates = IndexCoordinates.of(indexName);
+        // 判断索引是否存在
+        if(elasticsearchRestTemplate.indexOps(indexCoordinates).exists()){
+            // 索引别名
+            AliasQuery query = new AliasQuery(aliasName);
+            // 删除索引别名
+            boolean bool = elasticsearchRestTemplate.indexOps(indexCoordinates).removeAlias(query);
+            return bool;
+        }
+        return false;
+    }
+
+    /**
+     * 索引新增数据
+     * @param t 索引类
+     * @param <T> 索引类
+     */
+    public <T> void save(T t){
+        // 根据索引实体名新增数据
+        elasticsearchRestTemplate.save(t);
+    }
+
+    /**
+     * 批量插入数据
+     * @param queries 数据
+     * @param index 索引名称
+     */
+    public void bulkIndex(List<IndexQuery> queries, String index){
+        // 索引封装类
+        IndexCoordinates indexCoordinates = IndexCoordinates.of(index);
+        // 批量新增数据，此处数据，不要超过100m，100m是es批量新增的筏值，修改可能会影响性能
+        elasticsearchRestTemplate.bulkIndex(queries,indexCoordinates);
+    }
+
+    /**
+     * 根据条件删除对应索引名称的数据
+     * @param c 索引类对象
+     * @param filedName 索引中字段
+     * @param val 删除条件
+     * @param index 索引名
+     */
+    public void delete(Class c,String filedName,Object val,String index){
+        // 匹配文件查询
+        TermQueryBuilder termQueryBuilder = QueryBuilders.termQuery(filedName, val);
+        NativeSearchQuery nativeSearchQuery = new NativeSearchQuery(termQueryBuilder);
+        // 删除索引数据
+        elasticsearchRestTemplate.delete(nativeSearchQuery,c, IndexCoordinates.of(index));
+    }
+
+    /**
+     * 根据数据id删除索引
+     * @param id 索引id
+     * @param index
+     */
+    public void deleteById(Object id,String index){
+        if(null != id && StringUtils.isNotBlank(index)){
+            // 根据索引删除索引id数据
+            elasticsearchRestTemplate.delete(id.toString(),IndexCoordinates.of(index));
+        }
+    }
+
+    /**
+     * 根据id更新索引数据,不存在则创建索引
+     * @param t 索引实体
+     * @param id 主键
+     * @param index 索引名称
+     * @param <T> 索引实体
+     */
+    public <T> void update(T t,Integer id,String index){
+        // 查询索引中数据是否存在
+        Object data = elasticsearchRestTemplate.get(id.toString(), t.getClass(), IndexCoordinates.of(index));
+        if(data != null){
+            // 存在则更新
+            UpdateQuery build = UpdateQuery.builder(id.toString()).withDocument(Document.parse(JSON.toJSONString(t))).build();
+            elasticsearchRestTemplate.update(build,IndexCoordinates.of(index));
+        }else {
+            // 不存在则创建
+            elasticsearchRestTemplate.save(t);
+        }
+    }
+
+    /**
+     * 查询数据根据实际情况自行修改
+     * @param c
+     * @param search
+     * @param index
+     * @param <T>
+     * @return
+     */
+    public <T> List<T> getList(Class<T> c,String search,String index){
+        TermQueryBuilder termQueryBuilder = QueryBuilders.termQuery("title", search);
+        NativeSearchQuery nativeSearchQuery = new NativeSearchQuery(termQueryBuilder);
+        nativeSearchQuery.addSort(Sort.by(Sort.Direction.DESC,"_score"));
+        nativeSearchQuery.setTrackTotalHits(true);
+        SearchHits<T> tax_knowledge_matter = elasticsearchRestTemplate.search(nativeSearchQuery, c, IndexCoordinates.of(index));
+        List<SearchHit<T>> searchHits = tax_knowledge_matter.getSearchHits();
+        List<T> returnResult = new ArrayList<>();
+        searchHits.forEach(item -> {
+            T content = item.getContent();
+            returnResult.add(content);
+        });
+        return returnResult;
+    }
+
+    public <T> List<T> getList(Class<T> c,String search,int page,int size,Integer siteId,String index){
+        BoolQueryBuilder title = QueryBuilders.boolQuery().
+                must(QueryBuilders.matchQuery("title", search)).
+                must(QueryBuilders.termQuery("siteId", siteId));
+        NativeSearchQuery nativeSearchQuery = new NativeSearchQuery(title);
+//        nativeSearchQuery.addSort(Sort.by(Sort.Direction.DESC,"_score"));
+        nativeSearchQuery.setPageable(PageRequest.of(page,size,Sort.by(Sort.Direction.DESC,"_score")));
+        nativeSearchQuery.setTrackTotalHits(true);
+        SearchHits<T> tax_knowledge_matter = elasticsearchRestTemplate.search(nativeSearchQuery, c, IndexCoordinates.of(index));
+        List<SearchHit<T>> searchHits = tax_knowledge_matter.getSearchHits();
+        List<T> returnResult = new ArrayList<>();
+        searchHits.forEach(item -> {
+            T content = item.getContent();
+            returnResult.add(content);
+        });
+        return returnResult;
+    }
+}
+```
