@@ -198,3 +198,17 @@ https://doc.hutool.cn/pages/DateUtil/
 #### LocalDateTimeUtil
 
 https://doc.hutool.cn/pages/LocalDateTimeUtil/
+
+### 一些时间操作
+
+```java
+// 如何求当前时区的当天0点的时间戳
+long current = System.currentTimeMillis();
+long offset = TimeZone.getDefault().getRawOffset();
+// current+offset代表我们当前这个时间映射到标准时区的时间戳 最后-offset是变回我们时区
+long _0day = (current+offset)/(1000*3600*24)*(1000*3600*24)-offset
+//错误写法 没有带上offset
+long _0 = current/(1000*3600*24); //这个算的是 距离标准时间0点过了多少整数天
+long _1 = _0*(1000*3600*24); //这个算的是，距离标准时间0点过了多少个整数天的毫秒数 很显然，这个不是我们时区的0点
+```
+
