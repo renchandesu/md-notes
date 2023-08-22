@@ -73,7 +73,7 @@ es的查询相比于mysql的更加的复杂，还有聚合这种复杂的用法�
         </dependency>
 ```
 
-![image-20230820140227961](/Users/renchan/Desktop/Archive/笔记/assets/image-20230820140227961.png)
+![loading-ag-146](assets/12e7d962230894b6d35f3650096c9e93e4d5951a.png)
 
 https://spring.io/projects/spring-data-elasticsearch
 
@@ -106,8 +106,20 @@ public class ElasticConfig {
         }
     }
 }
-
 ```
+
+```java
+//项目中关于ehl的配置
+//elasticsearchTemplate是自动装配的，但是我用的这个版本不行
+```
+
+![](assets/2023-08-21-10-20-55-image.png)
+
+[Elasticsearch Index Lifecycle Management - 简书](https://www.jianshu.com/p/8334a5ae5de5)
+
+[Index lifecycle | Elasticsearch Guide [8.9] | Elastic](https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-index-lifecycle)
+
+[初探 Elasticsearch Index Template（索引模板) - 简书](https://www.jianshu.com/p/1f67e4436c37)
 
 ### 准备：数据的写入
 
@@ -164,4 +176,4 @@ public class ElasticService {
 }
 ```
 
-![image-20230820223117452](/Users/renchan/Desktop/Archive/笔记/assets/image-20230820223117452.png)
+![image-20230820223117452](assets/abb3b7fcd573bdcacbbea2df42d75a347cd885a9.png)
