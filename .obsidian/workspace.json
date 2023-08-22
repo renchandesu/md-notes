@@ -1,0 +1,155 @@
+{
+  "main": {
+    "id": "ff4d2951d8f6874e",
+    "type": "split",
+    "children": [
+      {
+        "id": "1a41119c8dc22acd",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "cd809338888afef3",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "es查询与聚合.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "55c47d0e0073d72a",
+    "type": "split",
+    "children": [
+      {
+        "id": "a61c75dc0eb5499f",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "a8473434e7136dfb",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical"
+              }
+            }
+          },
+          {
+            "id": "fed21f468466458c",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              }
+            }
+          },
+          {
+            "id": "dc50113e76a2a688",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {}
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "6b6009f5e3a2db91",
+    "type": "split",
+    "children": [
+      {
+        "id": "464d900fe2c14baf",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "2ed75b84dafe301b",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "es查询与聚合.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              }
+            }
+          },
+          {
+            "id": "e03a4d79ff5a439b",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "es查询与聚合.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              }
+            }
+          },
+          {
+            "id": "15a2aff9cef6e8d5",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true
+              }
+            }
+          },
+          {
+            "id": "9fa167a338eb2a93",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "es查询与聚合.md"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:打开快速切换": false,
+      "graph:查看关系图谱": false,
+      "canvas:新建白板": false,
+      "daily-notes:打开/创建今天的日记": false,
+      "templates:插入模板": false,
+      "command-palette:打开命令面板": false
+    }
+  },
+  "active": "cd809338888afef3",
+  "lastOpenFiles": [
+    "9月部门考核重点.md",
+    "智源后台架构.md",
+    "计算机网络——网络安全.md"
+  ]
+}
