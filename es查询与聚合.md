@@ -3,6 +3,12 @@
 ### 前言
 
 es的查询相比于mysql的更加的复杂，还有聚合这种复杂的用法，故在经过一段时间的代码学习之后，进行一下es查询方式的实战
+### 准备：项目版本确定
+这是项目中的版本
+springboot 2.2.5
+spring-boot-starter-elasticsearch 2.2.5
+spring-data-elasticsearch 3.2.5
+es版本 6.8.6
 
 ### 准备：索引的创建
 

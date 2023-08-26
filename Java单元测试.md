@@ -60,7 +60,7 @@ static List<Arguments> data(){
     return data;  
 }
 ```
-![[Pasted image 20230823173910.png]]
+![[Pasted image 20230824141000.png]]
 #### Mock
 模拟对象行为，按照期望运行，而要进行测试的方法调用的就是这个模拟对象的假方法
 用途：
@@ -70,6 +70,7 @@ static List<Arguments> data(){
 - 真实对象的有些行为很难触发
 
 简单使用，直接Mockito.mock去mock一个对象，这里面的方法都是空方法
+**注意，mock对象不会触发类的构造方法与构造方法块，但是静态代码块会触发**
 ```
 TestDao mock = Mockito.mock(TestDao.class);  
 System.out.println(mock.testBool());   //false
@@ -99,6 +100,68 @@ class ListsTest {
 }
 ```
 - 操作mock返回的对象 让其有特定的行为
+1. 有返回值的方法
 ```
-
+@Test  
+void testMock(){  
+    Object o = new Object();  
+    Object p = new Object();  
+    LogEntity logEntity = new LogEntity();  
+	 // 当调用testDao.testObject方法，且参数是o时，按照调用次数返回结果
+	Mockito.when(testDao.testObject(o)).thenReturn(false).thenReturn(true);     // 注意会覆盖掉
+    Mockito.when(testDao.testObject(o)).thenReturn(true);  
+    // 当调用testDao.testObject方法，且对象为o时，会根据Answer回调返回结果
+    Mockito.doAnswer(invocation -> {  
+        Object argument = invocation.getArgument(0);  
+        if (argument instanceof LogEntity)return true;  
+        else return false;  
+    }).when(testDao).testObject(o);  
+  
+    Mockito.when(testDao.testBool()).thenThrow(RuntimeException.class);  
+    Mockito.when(testDao.testBool()).thenAnswer(invocation -> false);  
+      
+}
 ```
+- 无返回值方法
+```
+String s1 = "1234";  
+  
+Mockito.doNothing().when(testDao).send(s1);  
+  
+testDao.send(s1);  
+  
+Mockito.doThrow(RuntimeException.class).when(testDao).send(ArgumentMatchers.anyString());  
+  
+assertThrows(RuntimeException.class,()->{  
+    testDao.send("22");  
+});
+```
+- 参数匹配器
+用于匹配参数类型，如果一个参数使用了则都需要使用
+import org.mockito.ArgumentMatchers
+![[Pasted image 20230824101802.png]]
+如何自定义参数匹配器：
+![[Pasted image 20230824102031.png]]
+```
+Mockito.when(testDao.testObject(ArgumentMatchers.argThat(o->{  
+    return o instanceof LogEntity;  
+}))).thenThrow(RuntimeException.class);  
+Mockito.when(testDao.testObject(ArgumentMatchers.argThat(Objects::isNull))).thenReturn(true);  
+  
+LogEntity logEntity = new LogEntity();  
+assertThrows(RuntimeException.class,()->{  
+   testDao.testObject(logEntity);  
+});  
+  
+assertEquals(true,testDao.testObject(null));
+```
+- Mockito.verify
+可以用于验证某个方法的调用次数
+![[Pasted image 20230824103304.png]]
+#### PowerMock
+用于模拟私有、final方法以及final类
+#### JMock
+http://jmockit.cn/index.htm
+![[Pasted image 20230824104220.png]]
+![[Pasted image 20230824104424.png]]
+![[Pasted image 20230824104510.png]]

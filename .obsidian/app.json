@@ -1,4 +1,5 @@
 {
-  "newFileLocation": "root",
-  "newFileFolderPath": "assets"
+  "newFileLocation": "folder",
+  "newFileFolderPath": "assets",
+  "alwaysUpdateLinks": true
 }
