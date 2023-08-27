@@ -83,9 +83,11 @@ es版本 6.8.6
 
 https://spring.io/projects/spring-data-elasticsearch
 
-- ElasticsearchRepository可以做[Elasticsearch](https://so.csdn.net/so/search?q=Elasticsearch&spm=1001.2101.3001.7020)的相关数据的增删改查，用法和普通的接口是一样的，这样就能统一ElasticSearch和普通的JPA操作，获得和操作mysql一样的代码体验,但是功能比较简单，复杂查询与操作就不好搞了。
+- ElasticsearchRepository可以做[Elasticsearch](https://so.csdn.net/so/search?q=Elasticsearch&spm=1001.2101.3001.7020)的相关数据的增删改查，用法类似jpa的接口，这样就能统一ElasticSearch和普通的JPA操作，获得和操作mysql一样的代码体验,但是功能比较简单，复杂查询与操作就不好搞了。
 - ElasticsearchTemplate 则提供了更多的方法，稍微更加底层一点，功能更加强大。
-- RestHighLevelClient 更加底层的api客户端 已过时，官方推荐使用ElasticsearchClient(8.x)
+- RestHighLevelClient 更加底层的api客户端 8.x版本中，官方推荐使用ElasticsearchClient(8.x)
+
+> 在新版的spring-data-elasticsearch中，`ElasticsearchRestTemplate`代替了原来的`ElasticsearchTemplate`。原因是`ElasticsearchTemplate`基于`TransportClient`，`TransportClient`即将在8.x以后的版本中移除。`ElasticsearchRestTemplate`基于`RestHighLevelClient`，如果不手动配置`RestHighLevelClient`bean，`ElasticsearchRestTemplate`将使用`org.springframework.boot.autoconfigure.elasticsearch.rest.RestClientConfigurations`默认配置的`RestHighLevelClient`
 
 ```java
 //注入ElasticsearchTemplate 这里使用的是es官方提供的es java api client
@@ -129,7 +131,71 @@ public class ElasticConfig {
 
 ### 准备：数据的写入
 
+编写映射实体对象 这个id 好像不是es的id，没法映射上去
+
+```java
+@Data
+@Accessors(chain = true)
+@Document(indexName = "book_record",createIndex = false,type = "_doc")
+public class BookRecord {
+
+    @Id
+    private String id;
+
+    @MultiField(mainField = @Field(type = FieldType.Text),otherFields = @InnerField(suffix = "keyword",type = FieldType.Keyword))
+    private String title;
+
+    @Field(type = FieldType.Keyword)
+    private String people;
+
+    @Field(type = FieldType.Double)
+    private Double price;
+
+    @Field(type = FieldType.Integer)
+    private List<Integer> tags;
+
+    @Field(type = FieldType.Integer)
+    private Integer rank;
+
+    @Field(type = FieldType.Date)
+    private Long timestamp;
+
+    @Field(type = FieldType.Object)
+    private Author author;
+
+    @Field(type = FieldType.Text)
+    private String description;
+
+}
+
+@Data
+@Accessors(chain = true)
+public class Author {
+
+    @Field(type = FieldType.Integer)
+    private Integer id;
+
+    @MultiField(mainField = @Field(type = FieldType.Text),otherFields = @InnerField(suffix = "keyword",type = FieldType.Keyword))
+    private String name;
+
+}
+```
+
+
+
 准备测试数据，大量数据的写入，需要使用bulk批量进行index,量小时可以使用index方法
+
+```java
+public void insertData(){
+    BookRecord bookRecord = new BookRecord().setRank(0).setPrice(32.0).setTimestamp(System.currentTimeMillis()).setDescription("123")
+            .setTags(Arrays.asList(1,2)).setAuthor(new Author().setId(1).setName("1234")).setPeople("1211").setTitle("test");
+    //IndexQuery
+    IndexQuery build = new IndexQueryBuilder().withIndexName(INDEX_NAME).withObject(bookRecord).build();
+    System.out.println(elasticsearchTemplate.index(build));
+}
+```
+
+
 
 ```java
 //写入10000条数据
@@ -183,3 +249,179 @@ public class ElasticService {
 ```
 
 ![image-20230820223117452](assets/abb3b7fcd573bdcacbbea2df42d75a347cd885a9.png)
+
+### 数据的更新
+
+数据的更新可以使用update/bulkUpdate方法进行操作
+
+```java
+@Service
+public class ElasticsearchUpdateTest {
+
+    @Autowired
+    private ElasticsearchTemplate elasticsearchTemplate;
+
+    public static final String INDEX_NAME = "book_record";
+
+    public void updateData(){
+//        BookRecord bookRecord = new BookRecord().setId("RgKCNooBC4jnidQ98vIC").setRank(100);
+
+      //需要一个map对象将更新的参数进行存储
+        HashMap<String, Object> parms = new HashMap<>();
+        parms.put("id","RgKCNooBC4jnidQ98vIC");
+        parms.put("rank",100);
+
+
+        UpdateRequest updateRequest = new UpdateRequest();
+        //设置为更新后立即对搜索可见
+        updateRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+      
+        updateRequest.doc(parms);
+
+        UpdateQuery build1 = new UpdateQueryBuilder().withId("RgKCNooBC4jnidQ98vIC").withClass(BookRecord.class)
+                .withUpdateRequest(updateRequest).build();
+
+        //是部分更新，只会更新有值的字段
+        UpdateResponse update = elasticsearchTemplate.update(build1);
+
+        System.out.println(update);
+
+
+    }
+}
+```
+
+注意这里的updateRequest.doc有一个重载方法是Object... 这个其实是key,value的形式的，并不是可以直接放进去一个对象
+
+我觉得这个api不是很好用，首先不能传入一个对象，其次貌似无法指定query,筛选需要更新的数据，项目里的写法好像是用的rhlc，有一个用script的方法(updateQuery里有一个updateRequest对象，应该能做到)
+
+![image-20230827190344422](/Users/renchan/Desktop/Archive/笔记/assets/image-20230827190344422-3134238.png)
+
+### 数据的删除
+
+这个还是比较方便的，既能够id删除，也能够条件删除
+
+```java
+@Service
+public class ElasticsearchDeleteTest {
+
+    @Autowired
+    private ElasticsearchTemplate elasticsearchTemplate;
+
+    public static final String INDEX_NAME = "book_record";
+
+    public void deleteData(){
+
+        DeleteQuery deleteQuery = new DeleteQuery();
+
+        deleteQuery.setQuery(ElasticsearchUtil.ge("rank",90));
+
+        deleteQuery.setIndex(INDEX_NAME);
+
+        elasticsearchTemplate.delete(deleteQuery, BookRecord.class);
+
+        System.out.println();
+
+
+    }
+
+    public void deleteDataById(){
+        elasticsearchTemplate.delete(BookRecord.class,"RwKENooBC4jnidQ9ePLz");
+    }
+}
+```
+
+
+
+![image-20230827191506181](assets/image-20230827191506181.png)
+
+### 数据的查询
+
+elasticsearchTemplate提供了如下查询doc的api
+
+- elasticsearchTemplate.queryForIds();
+- elasticsearchTemplate.queryForList();
+- elasticsearchTemplate.query();
+- elasticsearchTemplate.queryForPage();
+- 也提供了multiSearch的api，传入List\<Query\>
+
+#### 查询条件的构建 NativeSearchQueryBuilder->NativeSearchQuery
+
+通过这个QueryBuilder，可以构建出查询条件、分页、排序等。
+
+通过布尔查询的嵌套可以构建出多个查询条件的组合。（must must_not should filter）
+
+```java
+    private NativeSearchQueryBuilder buildQuery() {
+        NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder();
+
+        BoolQueryBuilder boolQueryBuilder = new BoolQueryBuilder();
+        boolQueryBuilder.must(ElasticsearchUtil.in("tag",getTagList(1,3)));
+        boolQueryBuilder.mustNot(ElasticsearchUtil.ge("price",40));
+        boolQueryBuilder.should(ElasticsearchUtil.match("",""))
+                .should(QueryBuilders.matchAllQuery())
+                .minimumShouldMatch(1);
+
+        nativeSearchQueryBuilder.withQuery(boolQueryBuilder);
+        nativeSearchQueryBuilder.withSort(SortBuilders.fieldSort("timestamp").order(SortOrder.DESC));
+        nativeSearchQueryBuilder.withPageable(PageRequest.of(1,2));
+        return nativeSearchQueryBuilder;
+        
+    }
+```
+
+- queryForPage
+
+分页获得查询的doc，按照设置的withPageable
+
+class对象指定返回结果的类型，如果query中没有包含索引的信息，也会从clazz的注解中去获取
+
+![image-20230827231118447](assets/image-20230827231118447.png)
+
+```
+AggregatedPage<BookRecord> bookRecords = elasticsearchTemplate.queryForPage(build, BookRecord.class);
+List<BookRecord> content = bookRecords.getContent(); //获取查询到的文档
+```
+
+- queryForPage-extract
+
+对返回的分页结果进行包装
+
+- queryForList
+
+直接获取结果列表
+
+```
+List<BookRecord> bookRecords = elasticsearchTemplate.queryForList(build, BookRecord.class);
+```
+
+- queryForIds
+
+只返回id
+
+```
+System.out.println(elasticsearchTemplate.queryForIds(build));
+```
+
+- query
+
+只返回一个结果，结果的类型由ResultsExtractor对象决定,负责将返回的response转换成对应的对象
+
+```
+elasticsearchTemplate.query(query, new ResultsExtractor<BookRecord>() {
+    @Override
+    public BookRecord extract(SearchResponse response) {
+        SearchHits hits = response.getHits();
+        System.out.println(hits.totalHits);
+        SearchHit[] hits1 = hits.getHits();
+        if (hits1 != null || hits1.length>0){
+            SearchHit a = hits1[0];
+            // source各个字段的key value
+            Map<String, Object> sourceAsMap = a.getSourceAsMap();
+            System.out.println(a.getSourceAsMap());
+        }
+        return null;
+    }
+});
+```
+
