@@ -52,6 +52,9 @@ scp <source_file> <destination_user>@<destination_host>:<destination_path>
 scp file.txt remoteuser@192.168.1.100:/home/user/documents
 ```
 
+- top
+https://www.runoob.com/linux/linux-comm-top.html
+- ps
 
 
 ### Shell脚本

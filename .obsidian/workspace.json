@@ -4,22 +4,35 @@
     "type": "split",
     "children": [
       {
-        "id": "65f7ebe998a09585",
+        "id": "3b8a6983c1bd2756",
         "type": "tabs",
         "children": [
           {
-            "id": "1298468855ce1ed9",
+            "id": "5a859570d85882b3",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "9月部门考核重点.md",
+                "file": "Linux操作系统.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          },
+          {
+            "id": "baf24383db25b7cf",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "assets/kubernetes.md",
                 "mode": "source",
                 "source": false
               }
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -69,7 +82,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 200
   },
   "right": {
     "id": "6b6009f5e3a2db91",
@@ -85,7 +98,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "9月部门考核重点.md",
+                "file": "assets/kubernetes.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -102,7 +115,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "9月部门考核重点.md",
+                "file": "assets/kubernetes.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -125,7 +138,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "9月部门考核重点.md"
+                "file": "assets/kubernetes.md"
               }
             }
           }
@@ -146,22 +159,38 @@
       "command-palette:打开命令面板": false
     }
   },
-  "active": "1298468855ce1ed9",
+  "active": "baf24383db25b7cf",
   "lastOpenFiles": [
+    "assets/Pasted image 20230826163645.png",
+    "Linux操作系统.md",
+    "assets/kubernetes.md",
+    "Java单元测试.md",
+    "Elasticsearch.md",
+    "assets/Pasted image 20230825111234.png",
+    "es查询与聚合.md",
+    "assets/ubuntu安装elasticsearch8.6.8.md",
+    "assets/Pasted image 20230824141000.png",
+    "Users/renchan/Desktop/Archive/笔记/assets/image-20230717224521940.png.md",
+    "Users/renchan/Desktop/Archive/笔记/assets",
+    "Users/renchan/Desktop/Archive/笔记",
+    "Users/renchan/Desktop/Archive",
+    "Users/renchan/Desktop",
+    "Users/renchan",
+    "Users",
+    "assets/Pasted image 20230823173910.png.md",
+    "assets/未命名.md",
+    "Mockito.pdf",
+    "msoDE46.tmp",
+    "msoC203.tmp",
+    "assets/Pasted image 20230824104510.png",
+    "assets/Pasted image 20230824104424.png",
+    "assets/Pasted image 20230824104220.png",
+    "assets/Pasted image 20230824103304.png",
+    "assets/Pasted image 20230824102031.png",
+    "assets/Pasted image 20230824101802.png",
+    "9月部门考核重点.md",
     "assets/bd38e65d19588f0e835a83b427347a4f1a3c594e.png",
     "assets/b8b8b12fccda599292bbbbb3e76ca992ac8fe8a5.png",
-    "assets/b5aa187b74effb9fe1fbb0281bdaa34e4c53c15c.png",
-    "assets/b2e0ba46a8dad8117647f61f7e805b1b4b131dd1.png",
-    "assets/adbb270312d7d477f1cd60f4570f9cd01d563553.png",
-    "assets/ad212d9d6c9b0a01cd1fda54c39b3de8b1535f02.png",
-    "assets/acfee32141571f9556d3d0e2e13ed72fc1b2158c.png",
-    "assets/a77840e6592b123ea65dad3f64ad87aec31f6454.png",
-    "assets/a023ed0e405568afa552b0daf55ba4886624a828.png",
-    "assets/65252446135d613642c3ac85fc14bc7c0770a64d.png",
-    "assets/9086537f0639fc43bfa72d6f866c32f15bf80ae9.png",
-    "Java单元测试.md",
-    "es查询与聚合.md",
-    "9月部门考核重点.md",
     "智源后台架构.md",
     "计算机网络——网络安全.md"
   ]
