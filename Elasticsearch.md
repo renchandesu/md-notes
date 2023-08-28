@@ -327,34 +327,30 @@ POST kibana_sample_data_logs/_doc 不自己指定id的情况的写入，es会自
     data
 }
 
-```
 #### 文档的更新
-```
 
 POST /<index>/_update/<_id> 局部更新
 {
     data
 }
 
+#### 文档的部分更新
+
 ```
-###### 文档的部分更新
 lucene支持对文档的整体更新, ES为了支持局部更新，在Lucene的Store索引中存储了一个_source字段，
 该字段的key值是文档ID，内容是文档的原文。
 当进行更新操作时先从_source中获取原文，与更新部分合并后，再调用lucene API进行全量更新, 
 对于写入了ES但是还没有refresh的文档，可以从translog中获取。
-
 另外为了防止读取文档过程后执行更新前有其他线程修改了文档，ES增加了版本机制，
 当执行更新操作时发现当前文档的版本与预期不符，则会重新获取文档再更新。 
+```
 
 #### 文档的删除
-```
 
 DELETE /<index>/_doc/<_id>
 
-```
 #### 批量的增删改 _bulk
 ##### 批量写入
-```
 
 POST /kibana_sample_data_logs/_docs/_bulk 下面的json体要成对出现
 {"index":{}} 这里可以指定id "_id"不指定默认
@@ -363,34 +359,26 @@ POST /kibana_sample_data_logs/_docs/_bulk 下面的json体要成对出现
 {data body}
 ...
 
-```
 ##### 批量更新
-```
 
 POST /kibana_sample_data_logs/_doc/_bulk
 {"update":{"_id":"1111111222222"}}
 {"doc":{"ip":"192.168.2.4"}}
 ...
 
-```
 ##### 批量删除
-```
 
 POST /<index>/_doc/_bulk
 {"delete":{"_id":"1111111222222"}}
 
-```
 #### Query DSL
 
 ##### 查询索引下文档总数
-```
 
 GET /_cat/count/<index1,index2>?v
 GET /articles/_count doc数量
 
-```
 ##### 空搜索
-```
 
 GET /_search 返回集群中所有索引的所有文档
 GET /<index>/_search
@@ -515,8 +503,10 @@ GET /index/_search
   }
 }
 
+##### ids
+
 ```
-###### ids
+
 
 根据id列表查询
 
@@ -531,7 +521,7 @@ GET /_search
 }
 ```
 
-###### exists
+##### exists
 
 指定的字段必须具有可被索引的值,最常见的情况是字段为null
 
@@ -553,7 +543,9 @@ GET /_search
 }
 ```
 
-###### 组合多查询
+
+
+##### 组合多查询
 
 - bool查询 可以组合多个查询条件
 
@@ -569,7 +561,7 @@ GET /_search
 }}
 ```
 
-###### Constant_score
+##### Constant_score
 
 用于只需要一个filter而没有其他查询的情况，取代只有filter的布尔查询
 
@@ -583,7 +575,7 @@ GET /_search
 }
 ```
 
-###### 精度控制
+##### 精度控制
 
 - 在text类型匹配时，只匹配所有词项全部包含的，或者至少需要匹配一定数量
 
@@ -616,7 +608,7 @@ GET /_search
 }
 ```
 
-###### 子查询嵌套
+##### 子查询嵌套
 
 查询是可以嵌套的，对于一个should、filter、match等，都可以通过bool查询进行嵌套
 
