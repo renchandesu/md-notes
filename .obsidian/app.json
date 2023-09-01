@@ -1,5 +1,8 @@
 {
-  "newFileLocation": "folder",
-  "newFileFolderPath": "assets",
-  "alwaysUpdateLinks": true
+  "newFileLocation": "root",
+  "newFileFolderPath": "/",
+  "alwaysUpdateLinks": true,
+  "promptDelete": false,
+  "newLinkFormat": "shortest",
+  "attachmentFolderPath": "assets"
 }
