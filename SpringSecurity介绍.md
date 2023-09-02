@@ -145,7 +145,25 @@ SecurityContext context = SecurityContextHolder.getContext(); Authentication aut
 
 ![[Pasted image 20230831110540.png]]
 
+### 持久认证
+目的：当用户第一次进行认证之后，后续的请求不再需要用户主动进行认证
+实现：sessionId HttpSession -> SecurityContext
+#### SecurityContextRepository
+Spring Security通过SecurityContextRepository将用户认证信息与用户后续请求关联起来。
+换言之，SecurityContextRepository定义了如何获取当前用户的SecurityContext以及如何存储当前用户的SecurityContext
 
+```java
+public interface SecurityContextRepository {  
+    SecurityContext loadContext(HttpRequestResponseHolder requestResponseHolder); 
+     
+    void saveContext(SecurityContext context, HttpServletRequest request, HttpServletResponse response);  
+}
+```
+将SecurityContextRepository的SecurityContext设置到SecurityContextHolder中的拦截器：
+- SecurityContextPersistenceFilter
+- SecurityContextHolderFilter
+![[Pasted image 20230902134717.png]]
+![[Pasted image 20230902134724.png]]
 
 ## 授权
 不同用户可能具有不同的对系统的操作权限，而不同权限能够访问与操作的资源是不同的。因此在用户访问接口时，需要对用户的权限进行判断。
@@ -154,10 +172,12 @@ SecurityContext context = SecurityContextHolder.getContext(); Authentication aut
 
 `GrantedAuthority`是一个接口，通过getAuthority返回的字符串来判断权限
 
-###   The AuthorizationManager
+### The AuthorizationManager
 
+AuthorizationManager
 
-AuthorizationManager被AuthorizationFilter调用，做出访问控制的最终决定
+AuthorizationManager是做出访问控制的最终决定的对象，在AuthorizationFilter中被调用
+在较新版本的security中可以取代AccessDecisionManager的作用
 
 ```java
 @FunctionalInterface  
@@ -170,7 +190,23 @@ public interface AuthorizationManager<T> {
 ```
 check方法定义了接口根据相关的信息进行access决定，做出的决定就是AuthorizationDecision对象，（true/false），object可以是传入包含了认证需要信息的对象。
 
+AuthorizationManager既有框架内部的实现，也可以由用户定义，SpringSecurity将所有的AuthorizationManager由一个叫做`RequestMatcherDelegatingAuthorizationManager`的对象代理，由它来找出最合适的AuthorizationManager
+![[Pasted image 20230902130647.png]]
 
+最常用的实现：
+- AuthorityAuthorizationManager
+	- 根据Authentication的authorities以及自身配置的authorities，做出`AuthorizationDecision`
+
+
+
+### 方法级别的鉴权
+方法级别的鉴权通过注解@PreAuthorize @Post...来实现
+但是方法级别的鉴权处理不是在拦截器中，而是通过方法拦截来进行的，因为在拦截器里，没有办法获取到具体的方法的注解信息。是一种通过aop来实现鉴权的方式
+
+拦截器对象为：MethodSecurityInterceptor  （@EnableGlobalMethodSecurity(prePostEnabled = true)）
+PrePostMethodSecurityConfiguration（@EnableMethodSecurity(prePostEnabled = true)）
+
+如果没有通过鉴权，会抛出AccessDeniedException 然后被拦截器捕获异常
 
 ## 如何处理Security Exceptions
 
@@ -188,3 +224,14 @@ try {
 	} 
 }
 ```
+如果抛出的是AuthenticationException,代表想要让用户进行认证，进行处理的是AuthenticationEntryPoint
+如果抛出的是AccessDeniedException，进行处理的是AccessDeniedHandler
+
+
+## 实际使用操作
+
+### 模板引擎
+### 前后端情景
+### Oauth2
+
+

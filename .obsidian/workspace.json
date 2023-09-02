@@ -13,62 +13,13 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Elasticsearch.md",
-                "mode": "source",
-                "source": false
-              }
-            }
-          },
-          {
-            "id": "c57cca9481a5a59b",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "Linux服务器安装MYSQL数据库、MINIO部署、JAVA环境配置.md",
-                "mode": "source",
-                "source": false
-              }
-            }
-          },
-          {
-            "id": "6bfa484de738da42",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "数据库与sql.md",
-                "mode": "source",
-                "source": false
-              }
-            }
-          },
-          {
-            "id": "164a204de8ad2a2e",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "面试.md",
-                "mode": "preview",
-                "source": false
-              }
-            }
-          },
-          {
-            "id": "33af6e1d98217e74",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
                 "file": "SpringSecurity介绍.md",
                 "mode": "source",
                 "source": false
               }
             }
           }
-        ],
-        "currentTab": 4
+        ]
       }
     ],
     "direction": "vertical"
@@ -195,31 +146,32 @@
       "command-palette:打开命令面板": false
     }
   },
-  "active": "33af6e1d98217e74",
+  "active": "2294c976cc2ab228",
   "lastOpenFiles": [
+    "assets/Pasted image 20230902134724.png",
+    "assets/Pasted image 20230902134717.png",
+    "assets/Pasted image 20230902130647.png",
+    "Elasticsearch.md",
+    "Linux服务器安装MYSQL数据库、MINIO部署、JAVA环境配置.md",
+    "数据库与sql.md",
+    "面试.md",
+    "SpringSecurity介绍.md",
     "assets/Pasted image 20230901105704.png",
     "assets/Pasted image 20230901105611.png",
-    "Linux服务器安装MYSQL数据库、MINIO部署、JAVA环境配置.md",
     "WINDOWS11安装WSL2.md",
     "ubuntu安装elasticsearch8.6.8.md",
-    "SpringSecurity介绍.md",
     "assets/Pasted image 20230831151709.png",
     "assets/Pasted image 20230831150804.png",
     "assets/Pasted image 20230831150047.png",
     "assets/Pasted image 20230831145355.png",
     "assets/Pasted image 20230831110540.png",
     "assets/Pasted image 20230831110117.png",
-    "assets/Pasted image 20230831102717.png",
-    "assets/Pasted image 20230831102419.png",
-    "assets/Pasted image 20230831095706.png",
     "Redis.md",
     "shiro.md",
     "Spring.md",
     "spring-mvc.md",
     "springboot.md",
     "SpringSecurity.md",
-    "面试.md",
-    "数据库与sql.md",
     "对象存储与MinIO.md",
     "Linux操作系统.md",
     "java序列化.md",
@@ -229,7 +181,6 @@
     "Docker容器技术.md",
     "assets/未命名.md",
     "es查询与聚合.md",
-    "Elasticsearch.md",
     "消息队列Kafka.md",
     "assets/kubernetes.md",
     "Users/renchan/Desktop/Archive/笔记/assets/image-20230717224521940.png.md",
