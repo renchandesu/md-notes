@@ -307,8 +307,6 @@ PUT <index_name>/_mapping
 }
 ```
 
-#### ignore_above
-Strings longer than the `ignore_above` setting will not be indexed or stored. For arrays of strings, `ignore_above` will be applied for each array element separately and string elements longer than `ignore_above` will not be indexed or stored.
 ### 文档的CRUD
 
 #### 文档的新增
@@ -1719,3 +1717,6 @@ public class CommonESRepository {
     }
 }
 ```
+
+## Elasticsearch原理
+

@@ -4,8 +4,13 @@
 Spring Security是Spring项目组提供的安全服务框架，提供了身份验证、授权和防范常见攻击的功能。它为系统提供了声明式安全访问控制功能，减少了 为系统安全而编写大量重复代码的工作。
 
 ## 基本结构
-整体架构的介绍
+### Spring Security是如何工作的
+
+
+
+### 整体架构的介绍
 有学习过，在客户端发起的请求进入servlet之前，会先经过过滤器链(FilterChain)，FilterChain包含了一系列的过滤器以及最终处理请求的servlet（基于请求的uri），在spring mvc应用中，这个servlet其实就是DispatcherServlet，它可以将请求分发给对应的Controller进行处理。过滤器链上的过滤器会依次对请求进行处理，过滤器在进行了自己的逻辑之后如果让请求通过，则会调用doFilter方法，放行请求，让下一个过滤器处理。如果不通过，则下游的过滤器不会继续处理请求
+
 ```java
 public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) { 
 	// do something before the rest of the application 
@@ -130,9 +135,17 @@ SecurityContext context = SecurityContextHolder.getContext(); Authentication aut
 
 是AuthenticationManager的一个最常用到的实现类。
 
-包含了一系列的AuthenticationProvider，每个provider用于进行不同类别的认证方式，比如username/password jwt... 但是对外只是暴露一个ProviderManager对象
+包含了一系列的AuthenticationProvider，每个provider用于进行不同类别的认证方式，比如username/password basic... 但是对外只是暴露一个ProviderManager对象
 
 ![[Pasted image 20230831102717.png]]
+
+
+
+### UserDetailsService
+
+用于提供UserDetails实体对象的接口。被AuthenticationProvider使用。
+
+
 
 
 ### Request Credentials with `AuthenticationEntryPoint`
@@ -148,6 +161,7 @@ SecurityContext context = SecurityContextHolder.getContext(); Authentication aut
 ### 持久认证
 目的：当用户第一次进行认证之后，后续的请求不再需要用户主动进行认证
 实现：sessionId HttpSession -> SecurityContext
+
 #### SecurityContextRepository
 Spring Security通过SecurityContextRepository将用户认证信息与用户后续请求关联起来。
 换言之，SecurityContextRepository定义了如何获取当前用户的SecurityContext以及如何存储当前用户的SecurityContext
@@ -231,7 +245,24 @@ try {
 ## 实际使用操作
 
 ### 模板引擎
-### 前后端情景
-### Oauth2
+
+一个自定义的登录页面
+
+一个登出接口
+
+一个可以任何人访问的页面
+
+一个必须要权限admin的页面
+
+一个必须要登录的页面
+
+​	一个按钮：
+
+​		一个必须要权限write的接口
 
 
+
+
+
+### 前后端情景 jwt
+todo : 模版引擎自定义拦截器进行认证
