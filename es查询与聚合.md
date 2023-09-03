@@ -425,3 +425,424 @@ elasticsearchTemplate.query(query, new ResultsExtractor<BookRecord>() {
 });
 ```
 
+### 聚合查询
+- 如何添加聚合函数：
+nativeSearchQuery.addAggregation(AggregationBuilders.xx)
+#### 桶聚合
+默认按照数量排序
+
+```java
+@Service  
+public class ElasticsearchAggTermsQueryTest {  
+  
+    @Autowired  
+    private ElasticsearchTemplate elasticsearchTemplate;  
+  
+    public static final String INDEX_NAME = "book_record";  
+  
+    public void max(){  
+  
+    }  
+  
+    /*  
+    桶聚合  
+     */    public void term_keyword(){  
+  
+        // 按照author.name.keyword聚合  
+        NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder();  
+        nativeSearchQueryBuilder.withQuery(ElasticsearchUtil.between("price",40,50));  
+        NativeSearchQuery build = nativeSearchQueryBuilder.build();  
+        // shardSize每个分片返回的桶的数量，越多结果越精确 size最终返回的桶的数量  
+        build.addAggregation(AggregationBuilders.terms("term_author").field("author.name.keyword").shardSize(10000).size(20));  
+        AggregatedPage<BookRecord> bookRecords = elasticsearchTemplate.queryForPage(build, BookRecord.class);  
+        Aggregations aggregations = bookRecords.getAggregations();  
+        Map<String, Aggregation> aggregationMap = aggregations.getAsMap();  
+        // 强制类型转换  
+        Terms terms = (Terms) aggregationMap.get("term_author");  
+        for (Terms.Bucket bucket : terms.getBuckets()) {  
+            String keyAsString = bucket.getKeyAsString();  
+            long docCount = bucket.getDocCount();  
+            System.out.println(keyAsString+":"+docCount);  
+        }  
+    }  
+  
+    /*  
+    对于列表类型的桶聚合，是对列表中各个元素进行的聚合  
+     */    public void term_integer_list(){  
+        // 按照author.name.keyword聚合  
+        NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder();  
+        nativeSearchQueryBuilder.withQuery(ElasticsearchUtil.between("price",40,50));  
+        NativeSearchQuery build = nativeSearchQueryBuilder.build();  
+        build.addAggregation(AggregationBuilders.terms("term_tag").field("tags").shardSize(10000).size(20));  
+        AggregatedPage<BookRecord> bookRecords = elasticsearchTemplate.queryForPage(build, BookRecord.class);  
+        Aggregations aggregations = bookRecords.getAggregations();  
+        Map<String, Aggregation> aggregationMap = aggregations.getAsMap();  
+        // 强制类型转换  
+        Terms terms = (Terms) aggregationMap.get("term_tag");  
+        for (Terms.Bucket bucket : terms.getBuckets()) {  
+            String keyAsString = bucket.getKeyAsString();  
+            long docCount = bucket.getDocCount();  
+            System.out.println(keyAsString+":"+docCount);  
+        }  
+    }  
+  
+    /*  
+    聚合不可以对text类型进行  
+     */    public void term_text_invalid(){  
+        // 按照author.name.keyword聚合  
+        NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder();  
+        nativeSearchQueryBuilder.withQuery(ElasticsearchUtil.between("price",40,50));  
+        NativeSearchQuery build = nativeSearchQueryBuilder.build();  
+        // shardSize每个分片返回的桶的数量，越多结果越精确 size最终返回的桶的数量  
+        build.addAggregation(AggregationBuilders.terms("term_author").field("author.name").shardSize(10000).size(20));  
+        AggregatedPage<BookRecord> bookRecords = elasticsearchTemplate.queryForPage(build, BookRecord.class);  
+        Aggregations aggregations = bookRecords.getAggregations();  
+        Map<String, Aggregation> aggregationMap = aggregations.getAsMap();  
+        // 强制类型转换  
+        Terms terms = (Terms) aggregationMap.get("term_author");  
+        for (Terms.Bucket bucket : terms.getBuckets()) {  
+            String keyAsString = bucket.getKeyAsString();  
+            long docCount = bucket.getDocCount();  
+            System.out.println(keyAsString+":"+docCount);  
+        }  
+    }  
+  
+  
+}
+```
+
+####  指标聚合
+最大值 最小值 平均值 总和 总数
+```java
+@Service  
+public class ElasticsearchAggMetricsQueryTest {  
+  
+    @Autowired  
+    private ElasticsearchTemplate elasticsearchTemplate;  
+  
+    public static final String INDEX_NAME = "book_record";  
+  
+    /*  
+    这个聚合显示所有指标  
+     */    public void stats(){  
+  
+        // 按照author.name.keyword聚合  
+        NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder();  
+        NativeSearchQuery build = nativeSearchQueryBuilder.build();  
+        // shardSize每个分片返回的桶的数量，越多结果越精确 size最终返回的桶的数量  
+        build.addAggregation(AggregationBuilders.stats("stats").field("price").missing(0.0));  
+        AggregatedPage<BookRecord> bookRecords = elasticsearchTemplate.queryForPage(build, BookRecord.class);  
+        Aggregations aggregations = bookRecords.getAggregations();  
+        Map<String, Aggregation> aggregationMap = aggregations.getAsMap();  
+        // 强制类型转换  
+        Stats terms = (Stats) aggregationMap.get("stats");  
+        System.out.println(terms.getAvg());  
+        System.out.println(terms.getCount());  
+        System.out.println(terms.getMax());  
+        System.out.println(terms.getMin());  
+        System.out.println(terms.getName());  
+  
+    }  
+  
+    public void max(){  
+  
+        // 按照author.name.keyword聚合  
+        NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder();  
+        NativeSearchQuery build = nativeSearchQueryBuilder.build();  
+        // shardSize每个分片返回的桶的数量，越多结果越精确 size最终返回的桶的数量  
+        build.addAggregation(AggregationBuilders.max("stats").field("timestamp"));  
+        AggregatedPage<BookRecord> bookRecords = elasticsearchTemplate.queryForPage(build, BookRecord.class);  
+        Aggregations aggregations = bookRecords.getAggregations();  
+        Map<String, Aggregation> aggregationMap = aggregations.getAsMap();  
+        // 强制类型转换  
+        // 返回的类型是InternalMax  
+        // 对于timestamp类型，使用getValueAsString可以得到Long-like的结果  
+        Max terms = (Max) aggregationMap.get("stats");  
+        System.out.println(terms.getValue());  
+        System.out.println(terms.getValueAsString());  
+          
+    }  
+      
+}
+```
+#### Histogram聚合
+统计某个字段的各个区间上各有多少文档
+- ex_bound 代表扩展的边界,并不是指定一个更小的范围，而是一个更大的范围（填充空的buckets） only min_doc=0 effect        
+- hard_bound 代表指定更小的范围,但是目前es版本没有  
+- interval 代表间隔  
+- offset代表偏移量 \[0-interval\)        
+- 每个元素在哪个桶的计算公式：bucket_key = Math.floor((value - offset) / interval) * interval + offset 因此第一个桶的key可能不是我们设置的exbound(取决于interval offset 以及值最小的元素)  
+- order 排序 除了根据当前桶排序，还可以根据其他桶的结果进行排序  
+
+> By default the histogram returns all the buckets within the range of the data itself,            that is, the documents with the smallest values will determine the min bucket and the documents with the highest values will determine the max bucket
+
+意思是说直方图的上界与下界默认是按照文档的值来确定的，如果想要指定上界、下界，需要使用ex_bound 但不一定完全对的上
+
+```java
+@Service  
+public class ElasticsearchAggHistogramQueryTest {  
+  
+    @Autowired  
+    private ElasticsearchTemplate elasticsearchTemplate;  
+  
+    public static final String INDEX_NAME = "book_record";  
+  
+    public void histogram(){  
+        NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder();  
+        NativeSearchQuery build = nativeSearchQueryBuilder.build();  build.addAggregation(AggregationBuilders.histogram("hs").field("price").interval(3));  
+        /*  
+            By default the histogram returns all the buckets within the range of the data itself,            that is, the documents with the smallest values will determine the min bucket            and the documents with the highest values will determine the max bucket         */        
+            AggregatedPage<BookRecord> bookRecords = elasticsearchTemplate.queryForPage(build, BookRecord.class);  
+        // InternalHistogram  
+        Histogram hs = (Histogram) bookRecords.getAggregation("hs");  
+        for (Histogram.Bucket bucket : hs.getBuckets()) {  
+            System.out.println(bucket.getKeyAsString());  
+            System.out.println(bucket.getDocCount());  
+        }  
+    }  
+    public void dateHistogram(){  
+        NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder();  
+        NativeSearchQuery build = nativeSearchQueryBuilder.withPageable(PageRequest.of(0, 1)).build();  
+  
+        // dateHistogram可以设置时区，因为es在进行聚合时是按照utc时间来计算的，设置时区其实就是设置了offset 如果不加时区，最后的key会多8个小时  
+        build.addAggregation(AggregationBuilders.dateHistogram("hs").field("timestamp")  
+                .dateHistogramInterval(DateHistogramInterval.DAY).timeZone(DateTimeZone.getDefault()));  
+  
+        AggregatedPage<BookRecord> bookRecords = elasticsearchTemplate.queryForPage(build, BookRecord.class);  
+        // InternalDateHistogram  
+        Histogram hs = (Histogram) bookRecords.getAggregation("hs");  
+        for (Histogram.Bucket bucket : hs.getBuckets()) {  
+            System.out.println(bucket.getKeyAsString());  
+            System.out.println(bucket.getDocCount());  
+            //这里如果没有设置date的format是mills 返回的并不是时间戳
+        }  
+    }  
+}
+
+```
+
+### tophit聚合
+用于展示出每个桶中最相关的doc
+参数：
+- `from` - The offset from the first result you want to fetch.
+- `size` - The maximum number of top matching hits to return per bucket. By default the top three matching hits are returned.
+- `sort` - How the top matching hits should be sorted. By default the hits are sorted by the score of the main query.
+- _source - include the fields to return
+```java
+// tophit一般用在subAggregation中
+@Service  
+public class ElasticsearchAggTophitQueryTest {  
+  
+    @Autowired  
+    private ElasticsearchTemplate elasticsearchTemplate;  
+  
+    public static final String INDEX_NAME = "book_record";  
+  
+    public void tophit(){  
+        NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder();  
+        NativeSearchQuery build = nativeSearchQueryBuilder.build();  
+  
+        build.addAggregation(AggregationBuilders.terms("terms").field("title.keyword").subAggregation(  
+                AggregationBuilders.topHits("top").from(0).sort("timestamp", SortOrder.DESC).size(2)  
+        ));  
+        AggregatedPage<BookRecord> bookRecords = elasticsearchTemplate.queryForPage(build, BookRecord.class);  
+        Terms terms = (Terms) bookRecords.getAggregation("terms");  
+        List<? extends Terms.Bucket> buckets = terms.getBuckets();  
+        for (Terms.Bucket bucket : buckets) {  
+            System.out.println(bucket.getKeyAsString());  
+            TopHits top = bucket.getAggregations().get("top");  
+            SearchHits hits = top.getHits();  
+            for (SearchHit hit : hits.getHits()) {  
+                System.out.println(hit.getSourceAsString());  
+            }  
+            System.out.println("================================");  
+        }  
+  
+    }  
+}
+```
+#### filter/filters聚合
+##### filter
+>A single bucket aggregation that narrows the set of documents to those that match a [query](https://www.elastic.co/guide/en/elasticsearch/reference/8.9/query-dsl.html "Query DSL").
+
+将符合条件的doc聚合到一个桶中
+##### filters
+>To group documents using multiple filters, use the [`filters` aggregation](https://www.elastic.co/guide/en/elasticsearch/reference/8.9/search-aggregations-bucket-filters-aggregation.html "Filters aggregation"). This is faster than multiple `filter` aggregations.
+
+filters聚合会返回多个桶，每个桶是filter的doc，作用在filters的subAgg会作用在filter的每个桶
+```java
+@Service  
+public class ElasticsearchAggFiltersQueryTest {  
+  
+    @Autowired  
+    private ElasticsearchTemplate elasticsearchTemplate;  
+  
+    public static final String INDEX_NAME = "book_record";  
+  
+    public void filters(){  
+        NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder();  
+        NativeSearchQuery build = nativeSearchQueryBuilder.build();  
+  
+        build.addAggregation(AggregationBuilders.filters("filters",new FiltersAggregator.KeyedFilter("f1", ElasticsearchUtil.gt("price",50)),  
+                new FiltersAggregator.KeyedFilter("f2",ElasticsearchUtil.lt("price",40))).subAggregation(AggregationBuilders.avg("avg").field("price")));  
+        Filters filters = (Filters) elasticsearchTemplate.queryForPage(build, BookRecord.class).getAggregation("filters");  
+        for (Filters.Bucket bucket : filters.getBuckets()) {  
+            System.out.println(bucket.getKeyAsString());  
+            System.out.println(bucket.getDocCount());  
+            Avg avg = bucket.getAggregations().get("avg");  
+            System.out.println(avg.getValue());  
+        }  
+    }  
+    public void filter(){  
+        NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder();  
+        NativeSearchQuery build = nativeSearchQueryBuilder.build();  
+        build.addAggregation(AggregationBuilders.filter("filter",ElasticsearchUtil.gt("price",45)).subAggregation(AggregationBuilders.avg("avg").field("price")));  
+        AggregatedPage<BookRecord> bookRecords = elasticsearchTemplate.queryForPage(build, BookRecord.class);  
+        Filter filter = (Filter) bookRecords.getAggregation("filter");  
+        System.out.println(filter.getDocCount());  
+        Avg avg = filter.getAggregations().get("avg");  
+        System.out.println(avg.getValue());  
+    }  
+}
+```
+
+#### hightlight处理
+用于高亮显示查询出的doc中，匹配查询条件的部分
+>Highlighters enable you to get highlighted snippets from one or more fields in your search results so you can show users where the query matches are. When you request highlights, the response contains an additional `highlight` element for each search hit that includes the highlighted fields and the highlighted fragments.
+
+并不反映查询的bool逻辑，因此可能会可能会突出显示与查询匹配不对应的部分文档。
+![[Pasted image 20230829140203.png]]
+三种highlighter:
+- `unified`
+- `plain`
+- `fvh` (fast vector highlighter)
+参数：
+- fragment_offset
+Controls the margin from which you want to start highlighting. Only valid when using the `fvh` highlighter.
+- fragment_size
+The size of the highlighted fragment in characters. Defaults to 100.
+- number_of_fragments
+The maximum number of fragments to return. If the number of fragments is set to 0, no fragments are returned. Instead, the entire field contents are highlighted and returned.
+- pre_tags
+- post_tags
+具体使用方式，参考的是智源日志搜索那里：
+
+```java
+@Service  
+public class ElasticsearchAggHightlightsQueryTest {  
+  
+    @Autowired  
+    private ElasticsearchTemplate elasticsearchTemplate;  
+  
+    public static final String INDEX_NAME = "book_record";  
+  
+    public void hightlight(){  
+        NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder();  
+        nativeSearchQueryBuilder.withIndices(INDEX_NAME);  
+        nativeSearchQueryBuilder.withTypes("_doc");  
+        nativeSearchQueryBuilder.withQuery(ElasticsearchUtil.prefix("title","book"));  
+        HighlightBuilder.Field[] fields = new HighlightBuilder.Field[2];  
+        fields[0] = new HighlightBuilder.Field("title");  
+        fields[1] = new HighlightBuilder.Field("people");  
+        nativeSearchQueryBuilder.withHighlightFields(fields);  
+        NativeSearchQuery build = nativeSearchQueryBuilder.build();  
+        Page page = elasticsearchTemplate.queryForPage(build, Object.class, new SearchResultMapper() {  
+            @Override  
+            public <T> AggregatedPage<T> mapResults(SearchResponse searchResponse, Class<T> aClass, Pageable pageable) {  
+                List<List<String>> log = new ArrayList<>();  
+                for (SearchHit hit : searchResponse.getHits()) {  
+                    ArrayList<String> strings = new ArrayList<>();  
+                    log.add(strings);  
+                    /*  
+                    key: field_name                     */                    Map<String, HighlightField> highlightFields = hit.getHighlightFields();  
+                    for (HighlightField value : highlightFields.values()) {  
+                        /*  
+                        value.getName() 获取的是field的名字  
+                        value.fragments 获取的是hightlight列表 包括html标签  
+                        因此如果只需要获取highlight的内容，只需要将标签内的文本提取出来  
+                         */                        strings.add(value.fragments()[0].toString());  
+                    }  
+                }  
+                return new AggregatedPageImpl<>((List<T>) log, pageable, searchResponse.getHits().getTotalHits());  
+            }  
+  
+            @Override  
+            public <T> T mapSearchHit(SearchHit searchHit, Class<T> aClass) {  
+                return null;  
+            }  
+        });  
+        List content = page.getContent();  
+        for (Object o : content) {  
+            if (o instanceof List){  
+                System.out.println(o);  
+            }  
+        }  
+    }  
+}
+```
+
+#### cardinality聚合
+去重，cartinality metric，对每个bucket中的指定的field进行去重，取去重后的count，类似于count(distcint)  **但是是有误差的，5%的错误率**
+```java
+@Service  
+public class ElasticsearchAggCardnalityQueryTest {  
+  
+    @Autowired  
+    private ElasticsearchTemplate elasticsearchTemplate;  
+  
+    public static final String INDEX_NAME = "book_record";  
+  
+    public void card(){  
+        NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder();  
+        NativeSearchQuery build = nativeSearchQueryBuilder.build();  
+        build.addAggregation(AggregationBuilders.cardinality("card").field("tags"));  
+        AggregatedPage<BookRecord> bookRecords = elasticsearchTemplate.queryForPage(build, BookRecord.class);  
+        Cardinality card = (Cardinality) bookRecords.getAggregation("card");  
+        System.out.println(card.getValue());  
+    }  
+}
+```
+
+#### 管道聚合
+管道聚合用于对聚合的结果进行二次聚合
+分为父级管道聚合以及兄弟管道聚合
+
+
+
+### Script 
+
+es脚本的详细使用：
+https://www.jianshu.com/p/66a72d7ba3da
+
+项目中在批量更新威胁事件的状态时，使用到了script
+下面介绍批量更新doc字段时的使用方式：
+```java
+@Service  
+public class ElasticsearchScriptsTest {  
+  
+    @Autowired  
+    private ElasticsearchTemplate elasticsearchTemplate;  
+  
+    public static final String INDEX_NAME = "book_record";  
+  
+    /*  
+    批量更新  
+     */    public void scriptsUpdate(){  
+        Map<String,Object> params = new HashMap<>();  
+        params.put("title","expensive ones");  
+        String code = "ctx._source.title=params.title";  
+        params.put("people","rich ones");  
+        code += ";ctx._source.people=params.people";  
+        code += ";ctx._source.tags.add(100)";  
+  
+        Script script = new Script(Script.DEFAULT_SCRIPT_TYPE, Script.DEFAULT_SCRIPT_LANG, code, params);  
+  
+        // filter 过滤掉不符合条件的source  
+        BulkByScrollResponse price = elasticsearchTemplate.getClient().prepareExecute(UpdateByQueryAction.INSTANCE).source(INDEX_NAME).script(script).filter(ElasticsearchUtil.gt("price", 30)).execute().actionGet();  
+  
+        System.out.println(price.getUpdated());  
+  
+    }  
+  
+}
+```
