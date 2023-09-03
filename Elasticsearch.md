@@ -1146,7 +1146,7 @@ GET /kibana_sample_data_logs/_search
 }
 ```
 
-##### histogram
+#### histogram
 
 用于区间统计
 
@@ -1168,7 +1168,7 @@ GET /kibana_sample_data_logs/_search
 }
 ```
 
-##### date histogram
+#### date histogram
 
 ```
 GET /kibana_sample_data_logs/_search
@@ -1205,7 +1205,7 @@ es内部计算桶的时间跟我们理解的不一样，不是开始时间 + int
 结果是1573113990000，也就是2019-11-07 16:06:30
 
 
-##### percentile
+#### percentile
 
 用于评估当前数值分布情况，比如 99 percentile 是 1000 ， 是指 99%的数值都在 1000 以内。
 
@@ -1229,9 +1229,7 @@ GET <index_name>/_search?size=0
 }
 ```
 
-![img_3.png](img_3.png)
-
-##### 邻接矩阵
+#### 邻接矩阵
 
 Elasticsearch中的Adjacency Matrix聚合是一种强大的聚合类型，它可以用于分析和发现数据中的关系和连接。
 Adjacency Matrix聚合在许多使用场景中都非常有用。
