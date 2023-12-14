@@ -99,3 +99,6 @@ https://docs.docker.com/desktop/windows/install/
 测试一下wsl是否可能使用docker
 
 ![image-20220520091337224](C:\Users\10441\AppData\Roaming\Typora\typora-user-images\image-20220520091337224.png)
+
+
+

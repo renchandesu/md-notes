@@ -4,10 +4,6 @@
 Spring Security是Spring项目组提供的安全服务框架，提供了身份验证、授权和防范常见攻击的功能。它为系统提供了声明式安全访问控制功能，减少了 为系统安全而编写大量重复代码的工作。
 
 ## 基本结构
-### Spring Security是如何工作的
-
-
-
 ### 整体架构的介绍
 有学习过，在客户端发起的请求进入servlet之前，会先经过过滤器链(FilterChain)，FilterChain包含了一系列的过滤器以及最终处理请求的servlet（基于请求的uri），在spring mvc应用中，这个servlet其实就是DispatcherServlet，它可以将请求分发给对应的Controller进行处理。过滤器链上的过滤器会依次对请求进行处理，过滤器在进行了自己的逻辑之后如果让请求通过，则会调用doFilter方法，放行请求，让下一个过滤器处理。如果不通过，则下游的过滤器不会继续处理请求
 
@@ -23,9 +19,12 @@ public void doFilter(ServletRequest request, ServletResponse response, FilterCha
 在Spring中，如果想让一个Filter交由Spring容器管理，一种方法是加上@WebFilter@Componet注解。还可以将这个Filter的bean注册给DelegatingFilterProxy，DelegatingFilterProxy其实也是个Filter,但是它内部有一个delegate对象，这个对象是从Spring的容器中获取的Filter对象，而实际的过滤逻辑，也是委托给这个对象进行的。
 ![[Pasted image 20230901105704.png]]
 
-在SpringSecurity中有非常多的过滤器，并且根据配置的不同，每个请求需要经过的过滤器也可能是不同的，那要怎么样才能将这些过滤器加入到整体的过滤器链中呢？
+之前了解过Spring Security的可能知道，Spring Security会根据用户的配置与默认配置自动装配一系列自带的过滤器，组成一条过滤器链，对请求/响应与系统的一些状态进行处理与设置，从而实现认证、授权、对一些威胁攻击的保护等功能。
+![[4 (3).png]]
 
-SpringSecurity使用了FilterChainProxy来代理所有SpringSecurity的过滤器。FilterChainProxy是一个特殊的过滤器，它包含了若干SecurityFilterChain，能够将请求委托给对应的SecurityFilterChain进行处理。由于FilterChainProxy是一个Bean，所有wrap在了DelegatingFilterProxy中
+在SpringSecurity中有非常多的过滤器，并且根据配置的不同，每个请求需要经过的过滤器链也可能是不同的，那要怎么样才能将这些过滤器加入到整体的过滤器链中呢？
+
+SpringSecurity使用了FilterChainProxy来代理所有SpringSecurity的过滤器。FilterChainProxy是一个特殊的过滤器，它包含了若干SecurityFilterChain，能够将请求委托给对应的SecurityFilterChain进行处理。由于FilterChainProxy是一个Bean，所以wrap在了DelegatingFilterProxy中
 ![[Pasted image 20230831150047.png]]
 
 SecurityFilterChain是一个接口，被FilterChainProxy使用，来决定最终调用哪些filters
@@ -43,8 +42,8 @@ public interface SecurityFilterChain {
 
 ![[Pasted image 20230831151709.png]]
 为什么要使用FilterChainProxy来代理所有的Security Filters
-- FilterChainProxy可以提供一个开始点
-- 作为Security执行的中心，可以提取出一些必要的任务进行统一的执行，比如说，在每次请求结束之后清空SecurityContext来避免内存泄漏
+- FilterChainProxy可以提供一个spring security开始工作的开始点，便于定位问题与调试
+- 作为Security过滤器执行的中心，可以提取出一些必要的任务进行统一的执行，比如说，在每次请求结束之后清空SecurityContext来避免内存泄漏
 - 可以让过滤器链的调用更加灵活。因为Servlet容器中Filters基于请求的Url进行调用，而这里，通过接口的match方法，可以实现更加丰富的匹配逻辑。
 
 ## Security Filters
@@ -84,7 +83,11 @@ public interface SecurityFilterChain {
 - FilterSecurityInterceptor
 - SwitchUserFilter
 
-可以看出共有30多个过滤器，相当的多，但是这些过滤器并不是全部都加入到过滤器链的，而是根据用户的配置与默认的配置，创建过滤器链，具体的逻辑...
+可以看出共有30多个过滤器，相当的多，但是这些过滤器并不是全部都加入到过滤器链的，而是根据用户的配置与默认的配置，创建过滤器链，具体的逻辑就不说了，列下几个重要的类，以及一篇文章：
+- WebSecurity
+- SecurityBuilder
+- SecurityConfigurer
+- todo:url
 
 - 扩展：csrf攻击
 https://zhuanlan.zhihu.com/p/370796176
@@ -107,11 +110,18 @@ https://zhuanlan.zhihu.com/p/370796176
 
 代表用户已经认证的方法：
 ```java
-SecurityContext context = SecurityContextHolder.createEmptyContext(); Authentication authentication = new TestingAuthenticationToken("username", "password", "ROLE_USER"); context.setAuthentication(authentication); SecurityContextHolder.setContext(context);
+SecurityContext context = SecurityContextHolder.createEmptyContext(); 
+Authentication authentication = new TestingAuthenticationToken("username", "password", "ROLE_USER"); 
+context.setAuthentication(authentication); 
+SecurityContextHolder.setContext(context);
 ```
 获取用户信息的方法：
 ```java
-SecurityContext context = SecurityContextHolder.getContext(); Authentication authentication = context.getAuthentication(); String username = authentication.getName(); Object principal = authentication.getPrincipal(); Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+SecurityContext context = SecurityContextHolder.getContext(); 
+Authentication authentication = context.getAuthentication(); 
+String username = authentication.getName(); 
+Object principal = authentication.getPrincipal(); 
+Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
 ```
 默认SecurityContextHolder使用ThreadLocal变量来存储SecurityContext,所以每个线程获取到的context都是当前线程独有的。对于web应用来说，这样更好，因为会有很多个用户的请求。
 对于一个桌面应用，比如swing开发的程序，我们希望每个线程获取到的都是同一个context，可以通过设置SecurityContextHolder的策略来实现
@@ -128,29 +138,72 @@ SecurityContext context = SecurityContextHolder.getContext(); Authentication aut
 代表用户的权限(role scope ...)
 
 ### AuthenticationManager
-是一个接口定义了Filters如何进行认证。返回的Authentication将被调用的Filter设置到SecurityContextHolder中。你也可以在过滤器中实现自己的认证方式，然后直接调用SecurityContextHolder.getContext.setAuth的方式，而不通过AuthenticationManager来进行认证。
+是一个接口定义了如何对凭证信息进行认证。返回的Authentication将被调用的Filter设置到SecurityContextHolder中。你也可以在过滤器中实现自己的认证方式，然后直接调用SecurityContextHolder.getContext.setAuth的方式，而不通过AuthenticationManager来进行认证。
 ![[Pasted image 20230831102419.png]]
+```java
+public interface AuthenticationManager {  
+
+Authentication authenticate(Authentication authentication) throws AuthenticationException;  
+  
+}
+```
+
 
 ###  ProviderManager
 
 是AuthenticationManager的一个最常用到的实现类。
 
-包含了一系列的AuthenticationProvider，每个provider用于进行不同类别的认证方式，比如username/password basic... 但是对外只是暴露一个ProviderManager对象
+包含了一系列的AuthenticationProvider，每个provider可以支持不同形式的认证方式但是对外只是暴露一个ProviderManager对象，ProviderManager会遍历所有的提供的AuthenticationProvider，对authentication进行认证，直到获取到不为null的Authentication结果对象。
 
 ![[Pasted image 20230831102717.png]]
 
 
 
+```java
+public interface AuthenticationProvider {  
+  
+Authentication authenticate(Authentication authentication) throws AuthenticationException;  
+  
+boolean supports(Class<?> authentication);  
+
+}
+```
+
 ### UserDetailsService
 
 用于提供UserDetails实体对象的接口。被AuthenticationProvider使用。
 
+```java
+public interface UserDetails extends Serializable { 
+	String getPassword();  
+	String getUsername();  
+	boolean isAccountNonExpired();  
+    boolean isAccountNonLocked();  
+    boolean isCredentialsNonExpired();  
+    boolean isEnabled();  
+}
+```
 
+```java
 
+public interface UserDetailsService {  
+    UserDetails loadUserByUsername(String username) throws UsernameNotFoundException;  
+  
+}
+```
 
 ### Request Credentials with `AuthenticationEntryPoint`
 当需要用户进行凭证的输入时，AuthenticationEntryPoint可以用来发送一个response来请求用户输入凭证（重定向）
 
+
+```java
+public interface AuthenticationEntryPoint {  
+  
+void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException)  
+          throws IOException, ServletException;  
+  
+}
+```
 
 ### AbstractAuthenticationProcessingFilter
 是一个抽象的基类过滤器，用于对用户的凭证进行认证，子类过滤器重写

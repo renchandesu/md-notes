@@ -4,16 +4,16 @@
     "type": "split",
     "children": [
       {
-        "id": "a64a9adcbbb48ee8",
+        "id": "59ef5172cf7df1da",
         "type": "tabs",
         "children": [
           {
-            "id": "2294c976cc2ab228",
+            "id": "24200bf1d716265c",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "SpringSecurity介绍.md",
+                "file": "Linux操作系统.md",
                 "mode": "source",
                 "source": false
               }
@@ -85,7 +85,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "SpringSecurity介绍.md",
+                "file": "Linux操作系统.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -102,7 +102,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "SpringSecurity介绍.md",
+                "file": "Linux操作系统.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -125,7 +125,17 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "SpringSecurity介绍.md"
+                "file": "Linux操作系统.md"
+              }
+            }
+          },
+          {
+            "id": "f6d2d46af6a79aca",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency"
               }
             }
           }
@@ -146,33 +156,44 @@
       "command-palette:打开命令面板": false
     }
   },
-  "active": "2294c976cc2ab228",
+  "active": "24200bf1d716265c",
   "lastOpenFiles": [
+    "assets/Pasted image 20231205151129.png",
+    "WINDOWS11安装WSL2.md",
+    "SpringSecurity介绍.md",
+    "Elasticsearch.md",
+    "fink.md",
+    "设计模式.md",
+    "计算机网络——网络安全.md",
+    "面试.md",
+    "对象存储与MinIO.md",
+    "~WRL2862.tmp",
+    "~WRD2846.tmp",
+    "~WRL1523.tmp",
+    "es查询与聚合.md",
+    "~$组内分享问题记录板.docx",
+    "工作组内分享问题记录板.docx",
+    "工作组内分享问题记录版.docx",
+    "新建 Microsoft Word 文档.docx",
+    "assets/4 (3).png",
     "assets/Pasted image 20230902134724.png",
     "assets/Pasted image 20230902134717.png",
     "assets/Pasted image 20230902130647.png",
-    "Elasticsearch.md",
     "Linux服务器安装MYSQL数据库、MINIO部署、JAVA环境配置.md",
     "数据库与sql.md",
-    "面试.md",
-    "SpringSecurity介绍.md",
     "assets/Pasted image 20230901105704.png",
     "assets/Pasted image 20230901105611.png",
-    "WINDOWS11安装WSL2.md",
     "ubuntu安装elasticsearch8.6.8.md",
     "assets/Pasted image 20230831151709.png",
     "assets/Pasted image 20230831150804.png",
     "assets/Pasted image 20230831150047.png",
     "assets/Pasted image 20230831145355.png",
-    "assets/Pasted image 20230831110540.png",
-    "assets/Pasted image 20230831110117.png",
     "Redis.md",
     "shiro.md",
     "Spring.md",
     "spring-mvc.md",
     "springboot.md",
     "SpringSecurity.md",
-    "对象存储与MinIO.md",
     "Linux操作系统.md",
     "java序列化.md",
     "Java时间类总结.md",
@@ -180,18 +201,8 @@
     "Java单元测试.md",
     "Docker容器技术.md",
     "assets/未命名.md",
-    "es查询与聚合.md",
-    "消息队列Kafka.md",
-    "assets/kubernetes.md",
-    "Users/renchan/Desktop/Archive/笔记/assets/image-20230717224521940.png.md",
     "Users/renchan/Desktop/Archive/笔记/assets",
     "Users/renchan/Desktop/Archive/笔记",
-    "Users/renchan/Desktop/Archive",
-    "Users/renchan/Desktop",
-    "Users/renchan",
-    "Users",
-    "Mockito.pdf",
-    "msoDE46.tmp",
-    "msoC203.tmp"
+    "Users/renchan/Desktop/Archive"
   ]
 }
