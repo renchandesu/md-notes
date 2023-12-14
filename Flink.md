@@ -414,3 +414,117 @@ adults.print()
 
 ### Data Pipeline & ETL
 
+Apache Flink 的一个常见用途是实现 ETL（提取、转换、加载）管道，这些管道从一个或多个源获取数据，执行一些转换或扩充，然后将结果存储在某个地方。下面将介绍一些常用的API
+
+
+
+#### 无状态的数据转换
+
+##### map()
+
+将输入类型转换为输出类型
+
+```java
+DataStream<TaxiRide> rides = env.addSource(new TaxiRideSource(...));
+
+DataStream<EnrichedRide> enrichedNYCRides = rides
+    .filter(new RideCleansingSolution.NYCFilter())
+    .map(new Enrichment());
+
+enrichedNYCRides.print();
+```
+
+```java
+public static class Enrichment implements MapFunction<TaxiRide, EnrichedRide> {
+
+    @Override
+    public EnrichedRide map(TaxiRide taxiRide) throws Exception {
+        return new EnrichedRide(taxiRide);
+    }
+}
+```
+
+##### flatMap()
+
+map用于1对1的转换，如果想要1对N的转换（一个输入对应0到多个输出）使用flatMap
+
+```java
+public static class NYCEnrichment implements FlatMapFunction<TaxiRide, EnrichedRide> {
+
+    @Override
+    public void flatMap(TaxiRide taxiRide, Collector<EnrichedRide> out) throws Exception {
+        FilterFunction<TaxiRide> valid = new RideCleansing.NYCFilter();
+        if (valid.filter(taxiRide)) {
+            out.collect(new EnrichedRide(taxiRide));
+        }
+    }
+}
+```
+
+```java
+DataStream<TaxiRide> rides = env.addSource(new TaxiRideSource(...));
+
+DataStream<EnrichedRide> enrichedNYCRides = rides
+    .flatMap(new NYCEnrichment());
+
+enrichedNYCRides.print();
+```
+
+#### Keyed Streams
+
+##### keyBy()
+
+能够按照数据的一个属性对流进行分区通常非常有用，用于将具有相同属性值的所有事件组合在一起。
+
+```java
+rides
+    .flatMap(new NYCEnrichment())
+    .keyBy(enrichedRide -> enrichedRide.startCell);
+```
+
+因为keyBy会导致Flink集群的网络通信，并且需要序列化与反序列化，因此是一个开销较大的算子
+
+
+
+keyBy能够通过计算，来进行分区
+
+key必须以确定性的方式生成，因为在需要时会重新计算密钥，而不是将其附加到流记录。
+
+```java
+keyBy(ride -> GeoUtils.mapToGridCell(ride.startLon, ride.startLat));
+```
+
+##### Aggregations on Keyed Streams 
+
+我们可以在keyed stream上进行聚合操作
+
+```java
+minutesByStartCell
+  .keyBy(value -> value.f0) // .keyBy(value -> value.startCell)
+    // maxBy也可以使用field作为参数 代表POJO中的field 并且支持嵌套
+  .maxBy(1) // duration
+  .print();
+```
+
+The output stream now contains a record for each key every time the duration reaches a new maximum – as shown here with cell 50797:
+
+```
+...
+4> (64549,5M)
+4> (46298,18M)
+1> (51549,14M)
+1> (53043,13M)
+1> (56031,22M)
+1> (50797,6M)
+...
+1> (50797,8M)
+...
+1> (50797,11M)
+...
+1> (50797,12M)
+```
+
+上例包含了一个隐式的状态（max） Flink需要给每个不同的key都跟踪最大值状态的变化
+
+使用流时，通常更有意义的是考虑有限窗口上的聚合，而不是整个流。
+
