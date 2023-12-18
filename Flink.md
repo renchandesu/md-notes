@@ -528,3 +528,55 @@ The output stream now contains a record for each key every time the duration rea
 
 使用流时，通常更有意义的是考虑有限窗口上的聚合，而不是整个流。
 
+
+
+#### Stateful Transformations with Keyd State
+
+有时候，我们对数据的转换处理需要考虑之前出现的数据的一些状态，比如，去重，我们只需要收集一段时间内没有出现过的key的事件,这时候就需要一些key的记录。Flink为我们做到了这一点。
+
+上文介绍了一些单个数据转换的接口（Map flatMap ...） 接下来介绍的接口是**Rich Function**,比如 `RichFlatMapFunction接口，它有一些额外的方法：
+
+- `open(Configuration c)`
+- `close()`
+- `getRuntimeContext()`
+
+`open()` is called once, during operator initialization. This is an opportunity to load some static data, or to open a connection to an external service, for example.
+
+`getRuntimeContext()` 包含了关于算子的信息 比如并行度、state等等
+
+
+
+使用举例
+
+```java
+    env.addSource(new EventSource())
+        .keyBy(e -> e.key)
+        .flatMap(new Deduplicator())
+        .print();
+```
+
+```java
+public static class Deduplicator extends RichFlatMapFunction<Event, Event> {
+    //用于记录对应的key的state
+    ValueState<Boolean> keyHasBeenSeen;
+
+    @Override
+    public void open(Configuration conf) {
+        ValueStateDescriptor<Boolean> desc = new ValueStateDescriptor<>("keyHasBeenSeen", Types.BOOLEAN);
+        keyHasBeenSeen = getRuntimeContext().getState(desc);
+    }
+
+    @Override
+    public void flatMap(Event event, Collector<Event> out) throws Exception {
+        if (keyHasBeenSeen.value() == null) {
+            out.collect(event);
+            keyHasBeenSeen.update(true);
+        }
+    }
+}
+```
+
+
+
+#### Connected Streams
+
