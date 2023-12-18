@@ -352,7 +352,7 @@ Flink 应用程序在分布式集群上并行运行。算子的并行实例独�
 
 下图显示了作业图中前三个运算符以 2 并行度运行的Task，并终止于并行度为 1 的sink算子。第三个算子是有状态的，并且第二个算子对数据进行了partition,这样做是为了按某个键对流进行分区，相同的键的数据将被同一个算子一起处理。
 
-![image-20231214155044184](C:\Users\jinsongzhang\AppData\Roaming\Typora\typora-user-images\image-20231214155044184.png)
+![](https://nightlies.apache.org/flink/flink-docs-release-1.18/fig/learn-flink/parallel-job.png)
 
 State总是在本地被访问，这样能让Flink的应用有更高的吞吐量与更低的延时
 
@@ -546,7 +546,7 @@ The output stream now contains a record for each key every time the duration rea
 
 
 
-使用举例
+##### 使用举例
 
 ```java
     env.addSource(new EventSource())
@@ -576,7 +576,92 @@ public static class Deduplicator extends RichFlatMapFunction<Event, Event> {
 }
 ```
 
+很多时候，我们要控制key的state的数量，因为在一个无限流中，key可能是无限多的，可以调用
+
+```java
+keyHasBeenSeen.clear();
+```
+
+清理对应key 的state
+
+
+
+##### Non-keyd State
+
+在一个非keyd的context中管理状态也是可能的，但是一般不会用在UDF(user defined function)中.这个特性一般用在source 和 sink中
+
 
 
 #### Connected Streams
+
+一个算子可以拥有两个输入流
+
+![](https://nightlies.apache.org/flink/flink-docs-release-1.18/fig/connected-streams.svg)
+
+**用途**：合并两个流、根据信息如阈值、规则等来动态改变transform的行为
+
+
+
+##### 使用举例
+
+有一个流streamOfWords,包含了无限的单词输入，还有另一个流control，包含了需要过滤的单词，我们希望让streamOfWrods经过算子的输出，不包含需要过滤的单词。
+
+```java
+public static void main(String[] args) throws Exception {
+    StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+
+    DataStream<String> control = env
+        .fromElements("DROP", "IGNORE")
+        .keyBy(x -> x);
+
+    DataStream<String> streamOfWords = env
+        .fromElements("Apache", "DROP", "Flink", "IGNORE")
+        .keyBy(x -> x);
+  
+    control
+        .connect(streamOfWords) //连接操作
+        .flatMap(new ControlFunction()) // rich transform
+        .print();
+
+    env.execute();
+}
+```
+
+`ControlFunction`实现了`RichCoFlatMapFunction` 三个泛型的含义是**IN1 IN2 OUT** 即输入1（control）输入2（streamOfWord）以及 输出的类型
+
+```java
+public static class ControlFunction extends RichCoFlatMapFunction<String, String, String> {
+    private ValueState<Boolean> blocked;
+      
+    @Override
+    public void open(Configuration config) {
+        blocked = getRuntimeContext()
+            .getState(new ValueStateDescriptor<>("blocked", Boolean.class));
+    }
+      
+    @Override
+    public void flatMap1(String control_value, Collector<String> out) throws Exception {
+        blocked.update(Boolean.TRUE);
+    }
+      
+    @Override
+    public void flatMap2(String data_value, Collector<String> out) throws Exception {
+        if (blocked.value() == null) {
+            out.collect(data_value);
+        }
+    }
+}
+```
+
+
+
+**注意**：无法控制两个流中元素的消费顺序。这两个流中的Event相互竞争，Flink将会根据需要从两个流中读取数据。
+
+当时间/顺序很重要时，有必要缓存事件在state中，以在后续一个时机处理。
+
+通过使用实现**InputSelectable**的自定义运算符，可以对两输入运算符消耗其输入的顺序施加一些有限的控制
+
+
+
+### Stream Analytics
 
